@@ -54,7 +54,8 @@
     document.body.classList.add('bg-live');
 
     // ----- Sim params (light: it's a decorative, scrimmed background) -----
-    const N = IS_TOUCH ? 110 : 128;
+    const IS_MAC_SAFARI = !IS_TOUCH && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const N = (IS_TOUCH || IS_MAC_SAFARI) ? 110 : 128;
     const PRESSURE_ITERS = 12;
     const TEX = 1.0 / N;
 
