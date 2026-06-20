@@ -37,7 +37,7 @@ export default function Home() {
             <h2 className="section-title" id="services-title">One team for the whole map.</h2>
             <p className="lede">Six disciplines, operated as a single system. No silos between the people who build your brand and the people who make it perform.</p>
           </div>
-          <div className="services-grid reveal">
+          <div className="services-grid reveal stagger">
             <article className="service">
               <span className="idx">01</span>
               <h3>SEO &amp; AI Search</h3>
@@ -86,7 +86,7 @@ export default function Home() {
               <p className="lede" style={{ marginTop: "1.4rem" }}>We started with Colorado businesses and never stopped moving. Today A1 runs growth programs across five regions — each with operators who actually know the ground.</p>
               <a href="#contact" className="btn btn-ghost" style={{ marginTop: "2rem" }}>Bring A1 to your market <span className="arrow" aria-hidden="true">→</span></a>
             </div>
-            <div className="terrain-list reveal">
+            <div className="terrain-list reveal stagger from-left">
               <div className="terrain">
                 <span className="place">Denver</span>
                 <span className="meta">Colorado · Front Range</span>
@@ -131,7 +131,7 @@ export default function Home() {
             <h2 className="section-title" id="approach-title">A quarterly operating system, not a campaign.</h2>
             <p className="lede">We find your biggest constraint, ship against it, measure what moves, and adapt when the bottleneck shifts.</p>
           </div>
-          <div className="steps reveal">
+          <div className="steps reveal stagger">
             <div className="step">
               <span className="s-num">01</span>
               <h3>Diagnose</h3>
@@ -162,7 +162,7 @@ export default function Home() {
               <p className="eyebrow">FAQ</p>
               <h2 className="section-title" id="faq-title">Questions, answered.</h2>
             </div>
-            <div className="faq-list reveal">
+            <div className="faq-list reveal stagger">
               <details className="faq-item" open>
                 <summary>What does A1 do?<span className="plus" aria-hidden="true"></span></summary>
                 <div className="answer">A1 is a full-service growth marketing agency. We build brand, SEO and AI search visibility, performance media, websites and products, content, and the analytics that tie them together — then operate them as one compounding system rather than disconnected campaigns.</div>

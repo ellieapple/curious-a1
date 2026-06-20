@@ -22,7 +22,16 @@ export default function PageAnimations() {
       revealIo = new IntersectionObserver(
         (entries) => {
           entries.forEach((en) => {
-            if (en.isIntersecting) { en.target.classList.add("in"); revealIo?.unobserve(en.target); }
+            if (en.isIntersecting) {
+              const el = en.target as HTMLElement;
+              if (el.classList.contains("stagger")) {
+                Array.from(el.children).forEach((child, i) => {
+                  (child as HTMLElement).style.setProperty("--i", String(i));
+                });
+              }
+              el.classList.add("in");
+              revealIo?.unobserve(el);
+            }
           });
         },
         { threshold: 0, rootMargin: "0px 0px -5% 0px" }
