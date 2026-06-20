@@ -294,6 +294,15 @@ export default function PageAnimations() {
       return d + "Z";
     }
 
+    // Force hero-geo visible — CSS animation may not fire on some browsers
+    const heroGeo = document.querySelector<HTMLElement>(".hero-geo");
+    if (heroGeo) {
+      setTimeout(() => {
+        heroGeo.style.opacity = "1";
+        heroGeo.style.animation = "none";
+      }, 2600);
+    }
+
     const topoSvg = document.getElementById("topo-svg") as SVGSVGElement | null;
     if (topoSvg) {
       const CX = 335, CY = 215;

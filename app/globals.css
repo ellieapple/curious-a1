@@ -255,9 +255,13 @@ em.it { font-style: italic; }
 .nav-links a:not(.btn):hover { color: var(--paper); }
 .nav-cta { display: inline-flex; }
 .nav-toggle { display: none; }
+/* Belt-and-suspenders: beat any ancestor rule that might re-color the CTA */
+.site-header .nav-cta > a.btn { color: var(--ink); background: var(--paper); }
+.site-header .nav-cta > a.btn:hover { background: #fff; }
 
 /* ---------- Hero ---------- */
 .hero {
+  position: relative;
   min-height: 100svh;
   min-height: 100dvh;
   display: flex;
