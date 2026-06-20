@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Header from "@/components/Header";
 import ScrollReveal from "@/components/ScrollReveal";
 import FluidBackground from "@/components/FluidBackground";
@@ -15,13 +16,14 @@ export default function Home() {
 
         {/* ===== HERO ===== */}
         <section className="hero wrap" aria-labelledby="hero-title">
-          <p className="eyebrow">Growth Marketing Agency · Colorado-Born</p>
+          <p className="eyebrow">Growth Marketing Agency · Denver, Colorado</p>
           <h1 className="display" id="hero-title">
             Marketing that moves with&nbsp;the terrain.
           </h1>
           <p className="lede">
-            A1 is a Colorado-born growth marketing agency built to scale across every market and
-            channel — brand, SEO &amp; AI search, performance media, and the systems that compound them.
+            A1 is a Colorado-born growth marketing agency built to scale across every market — brand,
+            SEO &amp; AI search, performance media, and the systems that compound them. Headquartered
+            in Denver. Built to travel.
           </p>
           <div className="hero-actions">
             <a href="#contact" className="btn btn-primary">
@@ -172,6 +174,11 @@ export default function Home() {
               We find your biggest constraint, ship against it, measure what moves, and adapt when
               the bottleneck shifts.
             </p>
+            <p style={{ color: "var(--paper-dim)", fontSize: "var(--step-0)", marginTop: "1rem", maxWidth: "55ch" }}>
+              The best growth marketing agencies near Denver don&apos;t run disconnected campaigns — they
+              build systems. A1&apos;s four-phase approach treats brand, SEO, paid media, and web as one
+              compounding engine, not separate line items.
+            </p>
           </div>
           <div className="steps reveal">
             {[
@@ -236,6 +243,18 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ===== BRAND IMAGE ===== */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "0 var(--gutter) 2rem", position: "relative", zIndex: 2 }}>
+          <Image
+            src="/og-image.jpg"
+            alt="A1 Marketing — growth marketing agency headquartered in Denver, Colorado"
+            width={1200}
+            height={630}
+            style={{ width: "100%", maxWidth: 900, height: "auto", borderRadius: 18, opacity: 0.85 }}
+            loading="lazy"
+          />
+        </div>
+
         {/* ===== CTA ===== */}
         <section className="band wrap cta-band cv-auto" id="contact" aria-labelledby="cta-title">
           <div className="reveal">
@@ -286,7 +305,8 @@ export default function Home() {
             <div className="foot-col">
               <h4>Contact</h4>
               <address>
-                Colorado, USA<br />
+                A1 Marketing<br />
+                Denver, Colorado, USA<br />
                 <a href="mailto:sales@evergreena1marketing.com">sales@evergreena1marketing.com</a>
               </address>
             </div>

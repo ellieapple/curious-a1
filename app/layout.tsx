@@ -27,11 +27,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.evergreena1marketing.com"),
   title: {
-    default: "A1 — Growth Marketing Agency Across Every Terrain | Colorado-Born",
+    default: "Growth Marketing Agency Denver CO | A1 — Across Every Terrain",
     template: "%s | A1 Marketing",
   },
   description:
-    "A1 is a Colorado-born growth marketing agency built to scale across every terrain — brand, SEO & AI search, performance media, web, and the systems that compound them. Serving Denver, the Mountain West, and beyond.",
+    "Growth marketing agency in Denver, CO — A1 builds brand, SEO & AI search, performance media, and web systems that compound. Serving Mountain West and beyond.",
   keywords: [
     "growth marketing agency Colorado",
     "SEO agency Denver",
@@ -58,18 +58,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "A1 Marketing",
-    title: "A1 — Growth Marketing Across Every Terrain",
+    title: "Growth Marketing Agency Denver CO | A1 — Across Every Terrain",
     description:
-      "Colorado-born growth marketing agency. Brand, SEO & AI search, performance media, and the systems that compound them — built to scale across every terrain.",
+      "Growth marketing agency in Denver, CO — A1 builds brand, SEO & AI search, performance media, and web systems that compound. Serving Mountain West and beyond.",
     url: "https://www.evergreena1marketing.com/",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "A1 — Marketing Across Terrains" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "A1 Marketing — growth marketing agency in Denver, Colorado" }],
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "A1 — Growth Marketing Across Every Terrain",
+    title: "Growth Marketing Agency Denver CO | A1 Marketing",
     description:
-      "Colorado-born growth marketing agency built to scale across every terrain — brand, SEO & AI search, performance media, and compounding systems.",
+      "Colorado-born growth marketing agency — SEO & AI search, brand, performance media, and web systems that compound. Serving Denver, Mountain West, and beyond.",
     images: ["/og-image.jpg"],
   },
   alternates: {
@@ -148,6 +148,27 @@ const structuredData = {
     {
       "@type": "BreadcrumbList",
       itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.evergreena1marketing.com/" }],
+    },
+    {
+      "@type": "HowTo",
+      name: "How A1 Marketing Builds a Growth System for Your Business",
+      description: "A1's quarterly operating system finds your biggest growth constraint and systematically removes it — from diagnosis to compounding results.",
+      step: [
+        { "@type": "HowToStep", position: 1, name: "Diagnose", text: "We audit where your funnel actually breaks — not with a keyword list, but with data, analytics, and a single clear constraint that's holding growth back." },
+        { "@type": "HowToStep", position: 2, name: "Map", text: "We build a focused plan tied to revenue: the terrain, the route, and the few high-leverage projects that will move the most metrics." },
+        { "@type": "HowToStep", position: 3, name: "Build", text: "One integrated team ships brand, search, paid media, and site in sync — fast, measurable, and built to compound over time." },
+        { "@type": "HowToStep", position: 4, name: "Compound", text: "We review what moved, double down on what's working, and let authority and learnings stack quarter over quarter into durable competitive advantage." },
+      ],
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.evergreena1marketing.com/#webpage",
+      url: "https://www.evergreena1marketing.com/",
+      name: "Growth Marketing Agency Denver CO | A1 — Across Every Terrain",
+      speakable: {
+        "@type": "SpeakableSpecification",
+        cssSelector: [".hero h1", ".hero .lede", ".faq-item .answer"],
+      },
     },
   ],
 };
