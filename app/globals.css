@@ -88,16 +88,16 @@ body.bg-static::before {
   pointer-events: none;
   background:
     linear-gradient(180deg,
-      rgba(7,7,10,0.78) 0%,
-      rgba(7,7,10,0.42) 22%,
-      rgba(7,7,10,0.38) 50%,
-      rgba(7,7,10,0.52) 78%,
-      rgba(7,7,10,0.86) 100%);
+      rgba(7,7,10,0.52) 0%,
+      rgba(7,7,10,0.22) 22%,
+      rgba(7,7,10,0.18) 50%,
+      rgba(7,7,10,0.30) 78%,
+      rgba(7,7,10,0.72) 100%);
 }
 .scrim::after {
   content: "";
   position: absolute; inset: 0;
-  background: radial-gradient(120% 80% at 50% 40%, transparent 52%, rgba(0,0,0,0.5) 100%);
+  background: radial-gradient(120% 80% at 50% 40%, transparent 52%, rgba(0,0,0,0.35) 100%);
 }
 
 .page { position: relative; z-index: 2; }
