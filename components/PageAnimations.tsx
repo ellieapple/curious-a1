@@ -11,101 +11,160 @@ export default function PageAnimations() {
   useEffect(() => {
     const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const NS = "http://www.w3.org/2000/svg";
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
     // ── Year ──
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-    // ── Lenis smooth scroll ──
+    // ── Lenis smooth scroll (desktop only — touch scroll handles itself) ──
     let lenis: Lenis | null = null;
-    if (!REDUCED) {
+    if (!REDUCED && !isMobile) {
       lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
       lenis.on("scroll", ScrollTrigger.update);
       gsap.ticker.add((time) => { lenis!.raf(time * 1000); });
       gsap.ticker.lagSmoothing(0);
     }
 
-    // ── GSAP scroll reveals ──
     if (!REDUCED) {
-      // Section heads — fade up + scale
-      gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
-        gsap.from(el, {
-          opacity: 0,
-          y: 48,
-          scale: 0.97,
-          duration: 1.0,
-          ease: "power3.out",
-          scrollTrigger: {
+      if (isMobile) {
+        // ── Mobile: IntersectionObserver + CSS class system ──
+        // More reliable than GSAP ScrollTrigger on iOS dynamic viewport.
+        const docEl = document.documentElement;
+        docEl.classList.add("js-anim");
+
+        // Stamp --i on stagger children so the CSS delay cascade works
+        document.querySelectorAll<HTMLElement>(".stagger").forEach((container) => {
+          Array.from(container.children).forEach((child, i) => {
+            (child as HTMLElement).style.setProperty("--i", String(i));
+          });
+        });
+
+        // Observe .reveal and .stagger containers
+        const revealIo = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((en) => {
+              if (en.isIntersecting) {
+                en.target.classList.add("in");
+                revealIo.unobserve(en.target);
+              }
+            });
+          },
+          { threshold: 0, rootMargin: "0px 0px -6% 0px" }
+        );
+
+        requestAnimationFrame(() => {
+          document.querySelectorAll<HTMLElement>(".reveal, .stagger").forEach((el) => {
+            if (el.getBoundingClientRect().top < window.innerHeight) {
+              el.classList.add("in");
+            } else {
+              revealIo.observe(el);
+            }
+          });
+        });
+
+        // .js-draw scroll trigger on mobile
+        const drawIo = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((en) => {
+              if (en.isIntersecting) {
+                en.target.classList.add("drawn");
+                drawIo.unobserve(en.target);
+              }
+            });
+          },
+          { threshold: 0.3 }
+        );
+        document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => drawIo.observe(el));
+
+        // Failsafe: never leave content hidden after 3s
+        setTimeout(() => docEl.classList.remove("js-anim"), 3000);
+
+      } else {
+        // ── Desktop: GSAP ScrollTrigger ──
+
+        // Section heads — fade up + scale
+        gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
+          gsap.from(el, {
+            opacity: 0,
+            y: 48,
+            scale: 0.97,
+            duration: 1.0,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 88%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+        // Stagger grids — cards cascade up with scale
+        gsap.utils.toArray<HTMLElement>(".stagger:not(.from-left):not(.clip-up)").forEach((container) => {
+          gsap.from(Array.from(container.children), {
+            opacity: 0,
+            y: 44,
+            scale: 0.92,
+            duration: 0.75,
+            ease: "power3.out",
+            stagger: 0.1,
+            scrollTrigger: {
+              trigger: container,
+              start: "top 82%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+        // From-left — terrain rows slide in from left
+        gsap.utils.toArray<HTMLElement>(".stagger.from-left").forEach((container) => {
+          gsap.from(Array.from(container.children), {
+            opacity: 0,
+            x: -48,
+            scale: 0.97,
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.12,
+            scrollTrigger: {
+              trigger: container,
+              start: "top 82%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+        // Clip-up — FAQ items wipe from bottom
+        gsap.utils.toArray<HTMLElement>(".stagger.clip-up").forEach((container) => {
+          gsap.from(Array.from(container.children), {
+            opacity: 0,
+            y: 20,
+            clipPath: "inset(0 0 100% 0)",
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.08,
+            scrollTrigger: {
+              trigger: container,
+              start: "top 84%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+        // s-rule draw lines
+        document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => {
+          ScrollTrigger.create({
             trigger: el,
-            start: "top 88%",
-            toggleActions: "play none none none",
-          },
+            start: "top 80%",
+            onEnter: () => el.classList.add("drawn"),
+          });
         });
-      });
 
-      // Stagger grids — cards cascade up with scale
-      gsap.utils.toArray<HTMLElement>(".stagger:not(.from-left):not(.clip-up)").forEach((container) => {
-        gsap.from(Array.from(container.children), {
-          opacity: 0,
-          y: 44,
-          scale: 0.92,
-          duration: 0.75,
-          ease: "power3.out",
-          stagger: 0.1,
-          scrollTrigger: {
-            trigger: container,
-            start: "top 82%",
-            toggleActions: "play none none none",
-          },
-        });
-      });
+        // ── Background map sketches per section (desktop only, hidden via CSS on mobile) ──
+        buildSectionSketches(NS, REDUCED);
+      }
 
-      // From-left — terrain rows slide in from left
-      gsap.utils.toArray<HTMLElement>(".stagger.from-left").forEach((container) => {
-        gsap.from(Array.from(container.children), {
-          opacity: 0,
-          x: -48,
-          scale: 0.97,
-          duration: 0.7,
-          ease: "power3.out",
-          stagger: 0.12,
-          scrollTrigger: {
-            trigger: container,
-            start: "top 82%",
-            toggleActions: "play none none none",
-          },
-        });
-      });
-
-      // Clip-up — FAQ items wipe from bottom
-      gsap.utils.toArray<HTMLElement>(".stagger.clip-up").forEach((container) => {
-        gsap.from(Array.from(container.children), {
-          opacity: 0,
-          y: 20,
-          clipPath: "inset(0 0 100% 0)",
-          duration: 0.6,
-          ease: "power3.out",
-          stagger: 0.08,
-          scrollTrigger: {
-            trigger: container,
-            start: "top 84%",
-            toggleActions: "play none none none",
-          },
-        });
-      });
-
-      // s-rule draw lines
-      document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => {
-        ScrollTrigger.create({
-          trigger: el,
-          start: "top 80%",
-          onEnter: () => el.classList.add("drawn"),
-        });
-      });
-
-      // ── Background map sketches per section ──
-      buildSectionSketches(NS, REDUCED);
     } else {
+      // reduced-motion: reveal everything immediately
       document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => el.classList.add("drawn"));
       buildSectionSketches(NS, true);
     }
@@ -239,7 +298,7 @@ export default function PageAnimations() {
             wrapper.classList.add("visible");
             let delay = 0;
             strokeEls.forEach((e) => {
-              if (e._l === 0) return; // dashed paths skip draw animation
+              if (e._l === 0) return;
               const dur = Math.min(2.2, Math.max(0.4, e._l / 280));
               e.style.transition = `stroke-dashoffset ${dur.toFixed(2)}s cubic-bezier(.45,0,.25,1) ${delay.toFixed(2)}s`;
               delay += dur * 0.35;
