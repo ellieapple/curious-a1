@@ -10,7 +10,7 @@ export default function FluidBackground() {
     const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // ── WebGPU path ──
-    if (!REDUCED && navigator.gpu) {
+    if (!REDUCED && "gpu" in navigator) {
       const script = document.createElement("script");
       script.type = "module";
       script.src = "/a1-fluid-bg.js";
