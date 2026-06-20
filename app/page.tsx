@@ -7,9 +7,6 @@ export default function Home() {
     <>
       <a className="skip" href="#main">Skip to content</a>
 
-      <canvas id="bg-canvas" aria-hidden="true"></canvas>
-      <div className="scrim" aria-hidden="true"></div>
-
       <Header />
 
       <main id="main" className="page">
@@ -162,7 +159,7 @@ export default function Home() {
               <p className="eyebrow">FAQ</p>
               <h2 className="section-title" id="faq-title">Questions, answered.</h2>
             </div>
-            <div className="faq-list reveal stagger">
+            <div className="faq-list reveal stagger clip-up">
               <details className="faq-item" open>
                 <summary>What does A1 do?<span className="plus" aria-hidden="true"></span></summary>
                 <div className="answer">A1 is a full-service growth marketing agency. We build brand, SEO and AI search visibility, performance media, websites and products, content, and the analytics that tie them together — then operate them as one compounding system rather than disconnected campaigns.</div>
