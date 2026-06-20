@@ -202,8 +202,8 @@ export default function Home() {
             <h2 id="cta-title">Let&apos;s map your terrain.</h2>
             <p className="lede">Tell us where you&apos;re trying to go. We&apos;ll come back with the constraint worth solving first — and what the first 90 days look like.</p>
             <div className="cta-actions">
-              <a href="mailto:sales@evergreena1marketing.com" className="btn btn-primary">
-                sales@evergreena1marketing.com <span className="arrow" aria-hidden="true">→</span>
+              <a href="tel:+15044591202" className="btn btn-ink">
+                Call us — (504) 459-1202 <span className="arrow" aria-hidden="true">→</span>
               </a>
             </div>
           </div>
@@ -255,9 +255,9 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Mobile sticky email bar */}
-      <a href="mailto:sales@evergreena1marketing.com" className="mobile-cta-bar" aria-label="Email A1 Marketing">
-        Email Us — sales@evergreena1marketing.com
+      {/* Mobile sticky call bar */}
+      <a href="tel:+15044591202" className="mobile-cta-bar" aria-label="Call A1 Marketing">
+        Call Us — (504) 459-1202
       </a>
 
       <FluidBackground />

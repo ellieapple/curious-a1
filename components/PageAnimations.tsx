@@ -17,7 +17,7 @@ export default function PageAnimations() {
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-    // ── Lenis smooth scroll (desktop only — touch scroll handles itself) ──
+    // ── Lenis smooth scroll (desktop only) ──
     let lenis: Lenis | null = null;
     if (!REDUCED && !isMobile) {
       lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
@@ -26,150 +26,67 @@ export default function PageAnimations() {
       gsap.ticker.lagSmoothing(0);
     }
 
+    // ── Section entry animations — IntersectionObserver on ALL devices ──
     if (!REDUCED) {
-      if (isMobile) {
-        // ── Mobile: IntersectionObserver + CSS class system ──
-        // More reliable than GSAP ScrollTrigger on iOS dynamic viewport.
-        const docEl = document.documentElement;
-        docEl.classList.add("js-anim");
+      const docEl = document.documentElement;
+      docEl.classList.add("js-anim");
 
-        // Stamp --i on stagger children so the CSS delay cascade works
-        document.querySelectorAll<HTMLElement>(".stagger").forEach((container) => {
-          Array.from(container.children).forEach((child, i) => {
-            (child as HTMLElement).style.setProperty("--i", String(i));
-          });
+      // Stamp --i on stagger children for the CSS delay cascade
+      document.querySelectorAll<HTMLElement>(".stagger").forEach((container) => {
+        Array.from(container.children).forEach((child, i) => {
+          (child as HTMLElement).style.setProperty("--i", String(i));
         });
+      });
 
-        // Observe .reveal and .stagger containers
-        const revealIo = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((en) => {
-              if (en.isIntersecting) {
-                en.target.classList.add("in");
-                revealIo.unobserve(en.target);
-              }
-            });
-          },
-          { threshold: 0, rootMargin: "0px 0px -6% 0px" }
-        );
-
-        requestAnimationFrame(() => {
-          document.querySelectorAll<HTMLElement>(".reveal, .stagger").forEach((el) => {
-            if (el.getBoundingClientRect().top < window.innerHeight) {
-              el.classList.add("in");
-            } else {
-              revealIo.observe(el);
+      const revealIo = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((en) => {
+            if (en.isIntersecting) {
+              en.target.classList.add("in");
+              revealIo.unobserve(en.target);
             }
           });
+        },
+        { threshold: 0, rootMargin: "0px 0px -5% 0px" }
+      );
+
+      // Small delay to let layout settle before measuring positions
+      setTimeout(() => {
+        document.querySelectorAll<HTMLElement>(".reveal, .stagger").forEach((el) => {
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.95) {
+            el.classList.add("in");
+          } else {
+            revealIo.observe(el);
+          }
         });
+      }, 80);
 
-        // .js-draw scroll trigger on mobile
-        const drawIo = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((en) => {
-              if (en.isIntersecting) {
-                en.target.classList.add("drawn");
-                drawIo.unobserve(en.target);
-              }
-            });
-          },
-          { threshold: 0.3 }
-        );
-        document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => drawIo.observe(el));
-
-        // Failsafe: never leave content hidden after 3s
-        setTimeout(() => docEl.classList.remove("js-anim"), 3000);
-
-      } else {
-        // ── Desktop: GSAP ScrollTrigger ──
-
-        // Section heads — fade up + scale
-        gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
-          gsap.from(el, {
-            opacity: 0,
-            y: 48,
-            scale: 0.97,
-            duration: 1.0,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 88%",
-              toggleActions: "play none none none",
-            },
+      // .js-draw elements
+      const drawIo = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((en) => {
+            if (en.isIntersecting) {
+              en.target.classList.add("drawn");
+              drawIo.unobserve(en.target);
+            }
           });
-        });
+        },
+        { threshold: 0.3 }
+      );
+      document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => drawIo.observe(el));
 
-        // Stagger grids — cards cascade up with scale
-        gsap.utils.toArray<HTMLElement>(".stagger:not(.from-left):not(.clip-up)").forEach((container) => {
-          gsap.from(Array.from(container.children), {
-            opacity: 0,
-            y: 44,
-            scale: 0.92,
-            duration: 0.75,
-            ease: "power3.out",
-            stagger: 0.1,
-            scrollTrigger: {
-              trigger: container,
-              start: "top 82%",
-              toggleActions: "play none none none",
-            },
-          });
-        });
+      // Failsafe — never leave content permanently hidden
+      setTimeout(() => docEl.classList.remove("js-anim"), 4000);
 
-        // From-left — terrain rows slide in from left
-        gsap.utils.toArray<HTMLElement>(".stagger.from-left").forEach((container) => {
-          gsap.from(Array.from(container.children), {
-            opacity: 0,
-            x: -48,
-            scale: 0.97,
-            duration: 0.7,
-            ease: "power3.out",
-            stagger: 0.12,
-            scrollTrigger: {
-              trigger: container,
-              start: "top 82%",
-              toggleActions: "play none none none",
-            },
-          });
-        });
-
-        // Clip-up — FAQ items wipe from bottom
-        gsap.utils.toArray<HTMLElement>(".stagger.clip-up").forEach((container) => {
-          gsap.from(Array.from(container.children), {
-            opacity: 0,
-            y: 20,
-            clipPath: "inset(0 0 100% 0)",
-            duration: 0.6,
-            ease: "power3.out",
-            stagger: 0.08,
-            scrollTrigger: {
-              trigger: container,
-              start: "top 84%",
-              toggleActions: "play none none none",
-            },
-          });
-        });
-
-        // s-rule draw lines
-        document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => {
-          ScrollTrigger.create({
-            trigger: el,
-            start: "top 80%",
-            onEnter: () => el.classList.add("drawn"),
-          });
-        });
-
-        // ── Background map sketches per section (desktop only, hidden via CSS on mobile) ──
+      // ── Section sketches + glows: desktop only (hidden via CSS on mobile) ──
+      if (!isMobile) {
         buildSectionSketches(NS, REDUCED);
       }
-
     } else {
-      // reduced-motion: reveal everything immediately
       document.querySelectorAll<HTMLElement>(".js-draw").forEach((el) => el.classList.add("drawn"));
-      buildSectionSketches(NS, true);
+      if (!isMobile) buildSectionSketches(NS, true);
     }
 
-    // ── Section background map sketches ──
     function buildSectionSketches(NS: string, reduced: boolean) {
       type SketchDef = {
         sectionId: string;
@@ -179,7 +96,6 @@ export default function PageAnimations() {
       };
 
       const sketches: SketchDef[] = [
-        // Services — compass rose (top-right, larger + more visible)
         {
           sectionId: "services",
           pos: { top: "3rem", right: "2rem" },
@@ -199,7 +115,6 @@ export default function PageAnimations() {
             { d: "M80,48 L84,56 M80,48 L76,56 M112,80 L104,76 M112,80 L104,84", sw: 0.5, op: 0.10 },
           ],
         },
-        // Terrains — elevation profile (bottom-left, more prominent)
         {
           sectionId: "terrains",
           pos: { bottom: "2rem", left: "0" },
@@ -213,7 +128,6 @@ export default function PageAnimations() {
             { d: "M8,40 L14,40 M8,44 L11,44 M8,52 L14,52 M8,56 L11,56 M8,64 L14,64 M8,68 L11,68", sw: 0.5, op: 0.09 },
           ],
         },
-        // Approach — route with waypoints (top-left, expanded)
         {
           sectionId: "approach",
           pos: { top: "4rem", left: "0" },
@@ -229,7 +143,6 @@ export default function PageAnimations() {
             { d: "M24,176 L100,94 M100,94 L172,46 M172,46 L248,16", sw: 0.3, op: 0.06, dashed: true },
           ],
         },
-        // FAQ — survey grid (top-right, larger)
         {
           sectionId: "faq",
           pos: { top: "3rem", right: "0" },
@@ -249,51 +162,32 @@ export default function PageAnimations() {
       sketches.forEach(({ sectionId, pos, size, paths }) => {
         const section = document.getElementById(sectionId);
         if (!section) return;
-
         const wrapper = document.createElement("div");
         wrapper.className = "section-map";
-        Object.assign(wrapper.style, {
-          width: `${size[0]}px`,
-          height: `${size[1]}px`,
-          ...pos,
-        });
-
+        Object.assign(wrapper.style, { width: `${size[0]}px`, height: `${size[1]}px`, ...pos });
         const svg = document.createElementNS(NS, "svg") as SVGSVGElement;
         svg.setAttribute("viewBox", `0 0 ${size[0]} ${size[1]}`);
         svg.setAttribute("width", String(size[0]));
         svg.setAttribute("height", String(size[1]));
         svg.setAttribute("xmlns", NS);
-
         const strokeEls: (SVGPathElement & { _l: number })[] = [];
         paths.forEach(({ d, sw, op, dashed }) => {
           const p = document.createElementNS(NS, "path") as SVGPathElement & { _l: number };
-          p.setAttribute("d", d);
-          p.setAttribute("class", "map-stroke");
-          p.style.strokeWidth = String(sw);
-          p.style.opacity = String(op);
+          p.setAttribute("d", d); p.setAttribute("class", "map-stroke");
+          p.style.strokeWidth = String(sw); p.style.opacity = String(op);
           if (dashed) p.style.strokeDasharray = "4 6";
           svg.appendChild(p);
           const l = p.getTotalLength() || 100;
-          if (!reduced && !dashed) {
-            p.style.strokeDasharray = String(l);
-            p.style.strokeDashoffset = String(l);
-          }
+          if (!reduced && !dashed) { p.style.strokeDasharray = String(l); p.style.strokeDashoffset = String(l); }
           p._l = dashed ? 0 : l;
           strokeEls.push(p);
         });
-
         wrapper.appendChild(svg);
         section.style.position = "relative";
         section.appendChild(wrapper);
-
-        if (reduced) {
-          wrapper.classList.add("visible");
-          return;
-        }
-
+        if (reduced) { wrapper.classList.add("visible"); return; }
         ScrollTrigger.create({
-          trigger: section,
-          start: "top 75%",
+          trigger: section, start: "top 75%",
           onEnter: () => {
             wrapper.classList.add("visible");
             let delay = 0;
@@ -308,7 +202,6 @@ export default function PageAnimations() {
         });
       });
 
-      // ── Per-section gradient glows ──
       const sectionGlows: { id: string; style: Partial<CSSStyleDeclaration> }[] = [
         { id: "services",  style: { width: "520px", height: "520px", top: "-120px", right: "-80px",  background: "radial-gradient(circle, rgba(108,50,158,0.18) 0%, transparent 70%)" } },
         { id: "terrains",  style: { width: "480px", height: "480px", bottom: "-80px", left: "-60px", background: "radial-gradient(circle, rgba(42,78,162,0.16) 0%, transparent 70%)" } },
@@ -322,20 +215,13 @@ export default function PageAnimations() {
         glow.className = "section-glow";
         Object.assign(glow.style, style);
         sec.appendChild(glow);
-        ScrollTrigger.create({
-          trigger: sec,
-          start: "top 80%",
-          onEnter: () => glow.classList.add("visible"),
-        });
+        ScrollTrigger.create({ trigger: sec, start: "top 80%", onEnter: () => glow.classList.add("visible") });
       });
     }
 
     // ── Topographic contours ──
     let _s = 7919;
-    function rng() {
-      _s = (_s * 1664525 + 1013904223) & 0x7fffffff;
-      return _s / 0x7fffffff;
-    }
+    function rng() { _s = (_s * 1664525 + 1013904223) & 0x7fffffff; return _s / 0x7fffffff; }
     function makePath(cx: number, cy: number, rx: number, ry: number, pts: number, noise: number) {
       const a: [number, number][] = [];
       for (let i = 0; i < pts; i++) {
@@ -346,18 +232,16 @@ export default function PageAnimations() {
       const n = a.length;
       let d = `M${a[0][0].toFixed(1)} ${a[0][1].toFixed(1)}`;
       for (let j = 0; j < n; j++) {
-        const p0 = a[(j - 1 + n) % n], p1 = a[j];
-        const p2 = a[(j + 1) % n], p3 = a[(j + 2) % n];
+        const p0 = a[(j - 1 + n) % n], p1 = a[j], p2 = a[(j + 1) % n], p3 = a[(j + 2) % n];
         d += ` C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)} ${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)} ${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
       }
       return d + "Z";
     }
 
-    // Force hero-geo visible — CSS animation may not fire on some browsers
     const heroGeo = document.querySelector<HTMLElement>(".hero-geo");
     if (heroGeo) {
       setTimeout(() => {
-        heroGeo.style.opacity = "1";
+        heroGeo.style.opacity = isMobile ? "0.4" : "1";
         heroGeo.style.animation = "none";
       }, 2600);
     }
@@ -375,7 +259,6 @@ export default function PageAnimations() {
       ];
       const ACC = (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#e8c8a0").trim();
       const heroEls: (SVGPathElement & { _l: number })[] = [];
-
       function hadd(d: string, sw: number | null, op: number, stroke?: string) {
         const e = document.createElementNS(NS, "path") as SVGPathElement & { _l: number };
         e.setAttribute("d", d); e.setAttribute("class", "topo-path");
@@ -385,10 +268,8 @@ export default function PageAnimations() {
         topoSvg!.appendChild(e);
         const l = e.getTotalLength() || 400;
         if (!REDUCED) { e.style.strokeDasharray = String(l); e.style.strokeDashoffset = String(l); }
-        e._l = l;
-        heroEls.push(e);
+        e._l = l; heroEls.push(e);
       }
-
       LVLS.forEach((lv) => { hadd(makePath(CX, CY, lv.rx, lv.ry, lv.pts, lv.n), null, lv.op); });
       hadd("M278,206 L304,176 L327,193 L356,168 L390,189 L416,172", 0.9, 0.30);
       hadd("M158,360 C232,330 268,352 318,314 C366,278 408,302 472,262", 0.8, 0.20);
@@ -398,16 +279,13 @@ export default function PageAnimations() {
       hadd("M426,266 L434,274 M434,266 L426,274", 1.0, 0.40, ACC);
       hadd("M548,400 L548,420 L528,420", 0.7, 0.30);
       hadd("M548,44 L548,24 L528,24", 0.7, 0.26);
-
       if (!REDUCED) {
         let t = 0.6;
         heroEls.forEach((e) => {
           const dur = Math.min(2.0, Math.max(0.5, e._l / 340));
           e.style.transition = `stroke-dashoffset ${dur.toFixed(2)}s cubic-bezier(.45,0,.25,1) ${t.toFixed(2)}s`;
           t += dur * 0.52;
-          (function (x: typeof e) {
-            requestAnimationFrame(() => { requestAnimationFrame(() => { x.style.strokeDashoffset = "0"; }); });
-          }(e));
+          (function (x: typeof e) { requestAnimationFrame(() => { requestAnimationFrame(() => { x.style.strokeDashoffset = "0"; }); }); }(e));
         });
       }
     }
@@ -447,40 +325,37 @@ export default function PageAnimations() {
         e.style.strokeDasharray = String(l); e.style.strokeDashoffset = String(l); e._l = l;
         cityEls.push(e);
       }
-
       ap("M800,200 L1590,200",1.2,0.13); ap("M800,200 L10,200",1.2,0.13);
-      ap("M800,200 L800,12",1.2,0.13);   ap("M800,200 L800,388",1.2,0.13);
-      ap("M800,200 C870,162 1050,105 1340,48",1.0,0.11);
-      ap("M800,200 C870,242 1050,310 1340,368",1.0,0.11);
-      ap("M800,200 C730,162  550,105  260,48",1.0,0.11);
-      ap("M800,200 C730,242  550,310  260,368",1.0,0.11);
+      ap("M800,200 L800,12",1.2,0.13); ap("M800,200 L800,388",1.2,0.13);
+      ap("M800,200 C870,162 1050,105 1340,48",1.0,0.11); ap("M800,200 C870,242 1050,310 1340,368",1.0,0.11);
+      ap("M800,200 C730,162  550,105  260,48",1.0,0.11); ap("M800,200 C730,242  550,310  260,368",1.0,0.11);
       ac(800,200,28,0.9,0.14);
       ap("M1000,200 L1000,132",0.7,0.09); ap("M1000,200 L1000,268",0.7,0.09);
       ap("M1200,200 L1200,138",0.7,0.09); ap("M1200,200 L1200,262",0.7,0.09);
       ap("M1400,200 L1400,143",0.7,0.09); ap("M1400,200 L1400,257",0.7,0.09);
       ap("M1000,132 L1200,138",0.6,0.08); ap("M1000,268 L1200,262",0.6,0.08);
       ap("M1200,138 L1400,143",0.6,0.08); ap("M1200,262 L1400,257",0.6,0.08);
-      ap("M600,200 L600,132",0.7,0.09);   ap("M600,200 L600,268",0.7,0.09);
-      ap("M400,200 L400,138",0.7,0.09);   ap("M400,200 L400,262",0.7,0.09);
-      ap("M200,200 L200,143",0.7,0.09);   ap("M200,200 L200,257",0.7,0.09);
-      ap("M600,132 L400,138",0.6,0.08);   ap("M600,268 L400,262",0.6,0.08);
-      ap("M400,138 L200,143",0.6,0.08);   ap("M400,262 L200,257",0.6,0.08);
-      ap("M800,105 L738,105",0.6,0.08);   ap("M800,105 L862,105",0.6,0.08);
-      ap("M800,44  L738,44",0.6,0.08);    ap("M800,44  L862,44",0.6,0.08);
-      ap("M738,44  L738,105",0.6,0.08);   ap("M862,44  L862,105",0.6,0.08);
+      ap("M600,200 L600,132",0.7,0.09); ap("M600,200 L600,268",0.7,0.09);
+      ap("M400,200 L400,138",0.7,0.09); ap("M400,200 L400,262",0.7,0.09);
+      ap("M200,200 L200,143",0.7,0.09); ap("M200,200 L200,257",0.7,0.09);
+      ap("M600,132 L400,138",0.6,0.08); ap("M600,268 L400,262",0.6,0.08);
+      ap("M400,138 L200,143",0.6,0.08); ap("M400,262 L200,257",0.6,0.08);
+      ap("M800,105 L738,105",0.6,0.08); ap("M800,105 L862,105",0.6,0.08);
+      ap("M800,44  L738,44",0.6,0.08); ap("M800,44  L862,44",0.6,0.08);
+      ap("M738,44  L738,105",0.6,0.08); ap("M862,44  L862,105",0.6,0.08);
       ap("M1018,168 L1055,148 L1055,118",0.6,0.08); ap("M1215,138 L1252,118",0.6,0.08);
-      ap("M582,168  L545,148  L545,118",0.6,0.08);  ap("M385,138  L348,118",0.6,0.08);
+      ap("M582,168  L545,148  L545,118",0.6,0.08); ap("M385,138  L348,118",0.6,0.08);
       ap("M1018,232 L1055,252 L1055,282",0.6,0.08); ap("M1215,262 L1252,278",0.6,0.08);
-      ap("M582,232  L545,252  L545,282",0.6,0.08);  ap("M385,262  L348,278",0.6,0.08);
+      ap("M582,232  L545,252  L545,282",0.6,0.08); ap("M385,262  L348,278",0.6,0.08);
       ar(1010,140,58,44,2,0.5,0.07); ar(1072,140,54,44,2,0.5,0.07);
       ar(1010,216,58,42,2,0.5,0.07); ar(1072,216,54,42,2,0.5,0.07);
       ar(1210,145,62,42,2,0.5,0.07); ar(1210,218,62,40,2,0.5,0.07);
       ar(1276,145,54,42,2,0.5,0.07); ar(1276,218,54,40,2,0.5,0.07);
-      ar(534,140,58,44,2,0.5,0.07);  ar(474,140,58,44,2,0.5,0.07);
-      ar(534,216,58,42,2,0.5,0.07);  ar(474,216,58,42,2,0.5,0.07);
-      ar(318,145,62,42,2,0.5,0.07);  ar(254,145,60,42,2,0.5,0.07);
-      ar(318,218,62,40,2,0.5,0.07);  ar(254,218,60,40,2,0.5,0.07);
-      ar(744,48,52,44,2,0.5,0.07);   ar(806,48,52,44,2,0.5,0.07);
+      ar(534,140,58,44,2,0.5,0.07); ar(474,140,58,44,2,0.5,0.07);
+      ar(534,216,58,42,2,0.5,0.07); ar(474,216,58,42,2,0.5,0.07);
+      ar(318,145,62,42,2,0.5,0.07); ar(254,145,60,42,2,0.5,0.07);
+      ar(318,218,62,40,2,0.5,0.07); ar(254,218,60,40,2,0.5,0.07);
+      ar(744,48,52,44,2,0.5,0.07); ar(806,48,52,44,2,0.5,0.07);
       ar(1058,120,50,34,2,0.5,0.06); ar(548,120,50,34,2,0.5,0.06);
       ar(1058,262,50,34,2,0.5,0.06); ar(548,262,50,34,2,0.5,0.06);
       ([
@@ -489,7 +364,6 @@ export default function PageAnimations() {
         [600,132],[600,268],[400,138],[400,262]
       ] as [number,number][]).forEach(([cx,cy]) => ac(cx,cy,3,0.7,0.14));
       ac(800,200,10,1.1,0.22); ac(800,200,3,1.5,0.30);
-
       let cityDrawn = false;
       function sketch() {
         if (cityDrawn) return; cityDrawn = true;
@@ -499,17 +373,13 @@ export default function PageAnimations() {
           const dur = Math.min(1.4, Math.max(0.25, e._l / 420));
           e.style.transition = `stroke-dashoffset ${dur.toFixed(2)}s cubic-bezier(.4,0,.2,1) ${delay.toFixed(2)}s`;
           delay += dur * 0.21;
-          (function (el: typeof e) {
-            requestAnimationFrame(() => { requestAnimationFrame(() => { el.style.strokeDashoffset = "0"; }); });
-          }(e));
+          (function (el: typeof e) { requestAnimationFrame(() => { requestAnimationFrame(() => { el.style.strokeDashoffset = "0"; }); }); }(e));
         });
       }
-
       const contactEl = document.getElementById("contact");
-      let cio: IntersectionObserver | null = null;
       if ("IntersectionObserver" in window && contactEl) {
-        cio = new IntersectionObserver(
-          (entries) => { if (entries[0].isIntersecting) { sketch(); cio?.disconnect(); } },
+        const cio = new IntersectionObserver(
+          (entries) => { if (entries[0].isIntersecting) { sketch(); cio.disconnect(); } },
           { threshold: 0.15 }
         );
         cio.observe(contactEl);
