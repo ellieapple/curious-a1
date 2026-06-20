@@ -66,6 +66,7 @@ body {
   position: fixed;
   inset: 0;
   width: 100vw;
+  height: 100vh;  /* fallback for Safari < 15.4 (no svh/dvh) */
   height: 100svh;
   height: 100dvh;
   z-index: 0;
@@ -274,6 +275,7 @@ em.it { font-style: italic; }
 /* ---------- Hero ---------- */
 .hero {
   position: relative;
+  min-height: 100vh;  /* fallback for Safari < 15.4 (no svh/dvh) */
   min-height: 100svh;
   min-height: 100dvh;
   display: flex;
@@ -782,7 +784,7 @@ em.it { font-style: italic; }
   .footer-grid { grid-template-columns: 1fr; }
   .terrain { grid-template-columns: 1fr auto; }
   .terrain .meta { grid-column: 1 / -1; }
-  .hero { padding-top: 96px; padding-bottom: 48px; min-height: 100svh; }
+  .hero { padding-top: 96px; padding-bottom: 48px; min-height: 100vh; min-height: 100svh; }
   .hero h1 { max-width: 100%; }
   .hero .lede { max-width: 100%; }
   .hero-actions { flex-direction: column; gap: 0.8rem; align-items: flex-start; }

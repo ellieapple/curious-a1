@@ -5,28 +5,58 @@
 // Paused when tab hidden / reduced-motion.
 // ============================================================
 (async function () {
-  const cv = document.getElementById('bg-canvas');
+  let cv = document.getElementById('bg-canvas');
   if (!cv) return;
 
   const PREFERS_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
   const IS_MAC_SAFARI = !IS_TOUCH && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+  // On-screen diagnostics: load the page with ?debug to see which path runs
+  // (handy on Safari, where opening the Web Inspector isn't always convenient).
+  const DEBUG = /[?&]debug/.test(location.search);
+  let dbgEl = null;
+  function dbg(label, detail) {
+    if (!DEBUG) return;
+    if (!dbgEl) {
+      dbgEl = document.createElement('pre');
+      dbgEl.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;max-width:92vw;white-space:pre-wrap;margin:0;background:rgba(0,0,0,.82);color:#5dff8a;font:12px/1.45 monospace;padding:10px 12px;border:1px solid #5dff8a;border-radius:6px;pointer-events:none;';
+      document.body.appendChild(dbgEl);
+    }
+    dbgEl.textContent += label + (detail != null ? ': ' + detail : '') + '\n';
+  }
+
   function markStatic() {
     document.body.classList.add('bg-static');
     cv.style.display = 'none';
   }
 
-  if (PREFERS_REDUCED || !navigator.gpu) { markStatic(); return; }
-
-  function sizeCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.3 : 1.6);
-    cv.width = Math.floor(window.innerWidth * dpr);
-    cv.height = Math.floor(window.innerHeight * dpr);
+  // WebGPU binds a rendering context to the canvas for its lifetime, so the 2D
+  // trail can't reuse a canvas WebGPU already touched — swap in a clean clone.
+  function freshCanvas() {
+    const fresh = cv.cloneNode(false);
+    fresh.style.display = '';
+    cv.replaceWith(fresh);
+    cv = fresh;
   }
-  sizeCanvas();
 
-  // Shared palette
+  // The intended non-WebGPU experience: near-black canvas + a colored cursor
+  // plume (additive glow over the #07070a body) — close to the WebGPU look.
+  function startTrail(needFresh) {
+    if (needFresh) freshCanvas();
+    document.body.classList.remove('bg-static', 'bg-gpu-tainted');
+    cv.style.display = '';
+    sizeCanvas();
+    runCanvasTrail();
+  }
+
+  dbg('init', 'gpu=' + !!navigator.gpu + ' safari=' + IS_MAC_SAFARI);
+  dbg('ua', navigator.userAgent);
+
+  // Shared palette — MUST be defined before the guards below. The no-WebGPU path
+  // calls runCanvasTrail() (whose pointermove handler uses paletteColor) and then
+  // returns early; a `const` declared after that return sits in the temporal dead
+  // zone, so paletteColor would throw ReferenceError on every pointer move.
   const PALETTE = [
     [0.13, 0.20, 0.72],
     [0.10, 0.46, 0.88],
@@ -44,27 +74,43 @@
     return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k];
   }
 
+  // Reduced motion → static gradient, no animation.
+  if (PREFERS_REDUCED) { markStatic(); return; }
+  // No WebGPU at all → black-plume canvas trail.
+  if (!navigator.gpu) { dbg('no navigator.gpu', 'canvas trail'); startTrail(false); return; }
+
+  function sizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.3 : 1.6);
+    cv.width = Math.floor(window.innerWidth * dpr);
+    cv.height = Math.floor(window.innerHeight * dpr);
+  }
+  sizeCanvas();
+
   // ── WebGPU fluid for all browsers (Safari gets Y-flip fixes below) ──────────
   let THREE;
   try {
     THREE = await import('three');
+    dbg('three loaded');
   } catch (e) {
-    console.warn('[A1 bg] three.webgpu failed to load, using static background.', e);
-    markStatic();
+    dbg('three import FAILED', (e && e.message) || e);
+    console.warn('[A1 bg] three.webgpu failed to load, using canvas trail.', e);
+    startTrail(false);
     return;
   }
 
   try {
     await runBackground(THREE);
   } catch (err) {
-    console.warn('[A1 bg] WebGPU init failed, using static background.', err);
-    markStatic();
+    dbg('WebGPU init FAILED', (err && err.message) || err);
+    console.warn('[A1 bg] WebGPU init failed, using canvas trail.', err);
+    startTrail(true);
   }
 
   // ── Canvas 2D glow trail (Safari) ───────────────────────────────────────────
   function runCanvasTrail() {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
     const ctx = cv.getContext('2d');
+    dbg('canvas trail running');
     document.body.classList.add('bg-live');
 
     const DURATION = 2.2;   // seconds a trail point lives
@@ -154,6 +200,26 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.3 : 1.6));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     await renderer.init();
+
+    // Safari 18 exposes navigator.gpu but its partial WebGPU implementation can
+    // fail on the exact compute features the sim uses (StorageTexture +
+    // HalfFloatType + textureStore). Probe with one tiny no-op dispatch before
+    // building the full sim; if it throws, fall back to the static CSS gradient.
+    // The canvas is already WebGPU-bound at this point, so mark it tainted.
+    try {
+      const probeTex = new THREE.StorageTexture(4, 4);
+      probeTex.type = THREE.HalfFloatType;
+      const probe = Fn(() => { textureStore(probeTex, ivec2(0, 0), vec4(0, 0, 0, 1)); })().compute(1);
+      renderer.compute(probe);
+      probeTex.dispose();
+    } catch (probeErr) {
+      dbg('compute probe FAILED', (probeErr && probeErr.message) || probeErr);
+      console.warn('[A1 bg] WebGPU compute unsupported, using canvas trail.', probeErr);
+      startTrail(true);
+      return;
+    }
+
+    dbg('WebGPU live');
     document.body.classList.add('bg-live');
 
     const N = IS_TOUCH ? 110 : 128;
@@ -328,41 +394,52 @@
     let lastFrame = performance.now();
     function frame() {
       if (!running) return;
-      const now = performance.now();
-      const dt = Math.min(0.04, (now - lastFrame) / 1000);
-      lastFrame = now;
-      uDt.value = dt;
+      try {
+        const now = performance.now();
+        const dt = Math.min(0.04, (now - lastFrame) / 1000);
+        lastFrame = now;
+        uDt.value = dt;
 
-      const sinceMove = (now - lastMoveT) / 1000;
-      const moveBoost = Math.max(0, 1 - sinceMove / 0.18);
-      const intensity = pointerSeen ? 0.55 * moveBoost : 0;
+        const sinceMove = (now - lastMoveT) / 1000;
+        const moveBoost = Math.max(0, 1 - sinceMove / 0.18);
+        const intensity = pointerSeen ? 0.55 * moveBoost : 0;
 
-      let vx = realVel[0], vy = realVel[1];
-      const mag = Math.hypot(vx, vy), maxMag = 1.4;
-      if (mag > maxMag) { vx = vx / mag * maxMag; vy = vy / mag * maxMag; }
+        let vx = realVel[0], vy = realVel[1];
+        const mag = Math.hypot(vx, vy), maxMag = 1.4;
+        if (mag > maxMag) { vx = vx / mag * maxMag; vy = vy / mag * maxMag; }
 
-      uMouseUV.value.set(realUV[0], realUV[1]);
-      uMouseVel.value.set(vx, vy);
-      uMouseDown.value = intensity;
+        uMouseUV.value.set(realUV[0], realUV[1]);
+        uMouseVel.value.set(vx, vy);
+        uMouseDown.value = intensity;
 
-      colorT += dt * 0.10 + mag * dt * 0.85;
-      const c = paletteColor(colorT);
-      uMouseColor.value.set(c[0], c[1], c[2]);
+        colorT += dt * 0.10 + mag * dt * 0.85;
+        const c = paletteColor(colorT);
+        uMouseColor.value.set(c[0], c[1], c[2]);
 
-      // Safari: skip pressure projection — Jacobi solver causes orbiting warp on Metal
-      // Without pressure the fluid isn't divergence-free but it follows the cursor correctly
-      const ops = IS_MAC_SAFARI
-        ? [splatVel, advectVel, splatDye, advectDye]
-        : [splatVel, advectVel, divergence,
-           ...Array.from({ length: PRESSURE_ITERS / 2 }, () => [jacobiAB, jacobiBA]).flat(),
-           subtractGrad, copyVelBA, splatDye, advectDye];
-      renderer.compute(ops);
-      renderer.render(scene, cam);
+        // Safari: skip pressure projection — Jacobi solver causes orbiting warp on Metal
+        // Without pressure the fluid isn't divergence-free but it follows the cursor correctly
+        const ops = IS_MAC_SAFARI
+          ? [splatVel, advectVel, splatDye, advectDye]
+          : [splatVel, advectVel, divergence,
+             ...Array.from({ length: PRESSURE_ITERS / 2 }, () => [jacobiAB, jacobiBA]).flat(),
+             subtractGrad, copyVelBA, splatDye, advectDye];
+        renderer.compute(ops);
+        renderer.render(scene, cam);
 
-      realVel[0] *= 0.84;
-      realVel[1] *= 0.84;
+        realVel[0] *= 0.84;
+        realVel[1] *= 0.84;
 
-      rafId = requestAnimationFrame(frame);
+        rafId = requestAnimationFrame(frame);
+      } catch (err) {
+        // Safari 18+ can pass init/probe but throw inside compute/render mid-run.
+        // This runs inside requestAnimationFrame, so the error is otherwise
+        // uncaught — stop the loop and drop to the canvas trail.
+        dbg('render loop CRASH', (err && err.message) || err);
+        console.warn('[A1 bg] render loop error, falling back to canvas trail.', err);
+        running = false;
+        cancelAnimationFrame(rafId);
+        startTrail(true);
+      }
     }
     rafId = requestAnimationFrame(frame);
   }
