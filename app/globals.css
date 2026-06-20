@@ -255,6 +255,15 @@ em.it { font-style: italic; }
   position: relative;
 }
 .nav-links a:not(.btn):hover { color: var(--paper); }
+.nav-links a.nav-active:not(.btn) { color: var(--paper); }
+.nav-links a.nav-active:not(.btn)::after {
+  content: '';
+  position: absolute;
+  bottom: -3px; left: 0; right: 0;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
+}
 .nav-cta { display: inline-flex; }
 .nav-toggle { display: none; }
 /* Belt-and-suspenders: beat any ancestor rule that might re-color the CTA */
@@ -609,6 +618,21 @@ em.it { font-style: italic; }
   transition: opacity 1.6s ease;
 }
 .section-glow.visible { opacity: 1; }
+
+/* ── Scroll progress bar ── */
+#scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: var(--accent);
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease;
+  will-change: width;
+}
+#scroll-progress.sp-visible { opacity: 1; }
 
 /* ============ V2 — Geometric accents ============ */
 

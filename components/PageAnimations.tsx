@@ -17,6 +17,40 @@ export default function PageAnimations() {
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
+    // ── Scroll progress bar ──
+    const progressEl = document.createElement("div");
+    progressEl.id = "scroll-progress";
+    document.body.appendChild(progressEl);
+    const updateProgress = () => {
+      const scrolled = window.scrollY;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      progressEl.style.width = total > 0 ? `${(scrolled / total) * 100}%` : "0%";
+      if (scrolled > 80) progressEl.classList.add("sp-visible");
+      else progressEl.classList.remove("sp-visible");
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+
+    // ── Nav active-section highlight ──
+    const sectionIds = ["services", "terrains", "approach", "faq", "contact"];
+    const navLinks = document.querySelectorAll<HTMLAnchorElement>(".nav-links a[href^='#']");
+    const sectionIo = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting) {
+            const id = en.target.id;
+            navLinks.forEach((link) => {
+              link.classList.toggle("nav-active", link.getAttribute("href") === `#${id}`);
+            });
+          }
+        });
+      },
+      { rootMargin: "-38% 0px -58% 0px", threshold: 0 }
+    );
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) sectionIo.observe(el);
+    });
+
     // ── Lenis smooth scroll (desktop only) ──
     let lenis: Lenis | null = null;
     if (!REDUCED && !isMobile) {
@@ -389,6 +423,9 @@ export default function PageAnimations() {
     return () => {
       lenis?.destroy();
       ScrollTrigger.getAll().forEach((t) => t.kill());
+      window.removeEventListener("scroll", updateProgress);
+      progressEl.remove();
+      sectionIo.disconnect();
     };
   }, []);
 
