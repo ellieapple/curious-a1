@@ -116,68 +116,73 @@ export default function PageAnimations() {
         sectionId: string;
         pos: { top?: string; bottom?: string; left?: string; right?: string };
         size: [number, number];
-        paths: { d: string; sw: number; op: number }[];
+        paths: { d: string; sw: number; op: number; dashed?: boolean }[];
       };
 
       const sketches: SketchDef[] = [
-        // Services — compass rose (top-right)
+        // Services — compass rose (top-right, larger + more visible)
         {
           sectionId: "services",
-          pos: { top: "2rem", right: "1rem" },
-          size: [120, 120],
+          pos: { top: "3rem", right: "2rem" },
+          size: [160, 160],
           paths: [
-            { d: "M60,10 L60,110", sw: 0.6, op: 0.07 },
-            { d: "M10,60 L110,60", sw: 0.6, op: 0.07 },
-            { d: "M24,24 L96,96", sw: 0.5, op: 0.05 },
-            { d: "M96,24 L24,96", sw: 0.5, op: 0.05 },
-            { d: "M60,60 L60,18 L64,26 M60,18 L56,26", sw: 0.7, op: 0.10 },
-            { d: "M60,60 L60,102 L64,94 M60,102 L56,94", sw: 0.55, op: 0.07 },
-            { d: "M60,60 L18,60 L26,56 M18,60 L26,64", sw: 0.55, op: 0.07 },
-            { d: "M60,60 L102,60 L94,56 M102,60 L94,64", sw: 0.55, op: 0.07 },
-            { d: "M60,60 m-22,0 a22,22 0 1,1 44,0 a22,22 0 1,1 -44,0", sw: 0.5, op: 0.06 },
-            { d: "M60,60 m-10,0 a10,10 0 1,1 20,0 a10,10 0 1,1 -20,0", sw: 0.6, op: 0.08 },
-            { d: "M60,60 m-2,0 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0", sw: 1.0, op: 0.15 },
+            { d: "M80,8 L80,152", sw: 0.7, op: 0.12 },
+            { d: "M8,80 L152,80", sw: 0.7, op: 0.12 },
+            { d: "M28,28 L132,132", sw: 0.6, op: 0.09 },
+            { d: "M132,28 L28,132", sw: 0.6, op: 0.09 },
+            { d: "M80,80 L80,18 L85,30 M80,18 L75,30", sw: 0.9, op: 0.22 },
+            { d: "M80,80 L80,142 L85,130 M80,142 L75,130", sw: 0.7, op: 0.14 },
+            { d: "M80,80 L18,80 L30,75 M18,80 L30,85", sw: 0.7, op: 0.14 },
+            { d: "M80,80 L142,80 L130,75 M142,80 L130,85", sw: 0.7, op: 0.14 },
+            { d: "M80,80 m-32,0 a32,32 0 1,1 64,0 a32,32 0 1,1 -64,0", sw: 0.6, op: 0.10 },
+            { d: "M80,80 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0", sw: 0.7, op: 0.14 },
+            { d: "M80,80 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0", sw: 1.2, op: 0.28 },
+            { d: "M80,48 L84,56 M80,48 L76,56 M112,80 L104,76 M112,80 L104,84", sw: 0.5, op: 0.10 },
           ],
         },
-        // Terrains — elevation profile (bottom-left)
+        // Terrains — elevation profile (bottom-left, more prominent)
         {
           sectionId: "terrains",
-          pos: { bottom: "3rem", left: "0" },
-          size: [320, 90],
+          pos: { bottom: "2rem", left: "0" },
+          size: [380, 110],
           paths: [
-            { d: "M0,80 L30,80 L50,50 L70,60 L100,30 L130,45 L160,20 L190,38 L220,55 L250,40 L280,58 L320,58", sw: 0.8, op: 0.09 },
-            { d: "M0,90 L30,90 L50,65 L70,72 L100,48 L130,58 L160,38 L190,52 L220,66 L250,55 L280,70 L320,70", sw: 0.5, op: 0.06 },
-            { d: "M100,30 L100,80 M160,20 L160,80 M220,55 L220,80", sw: 0.4, op: 0.05 },
-            { d: "M0,80 L320,80", sw: 0.5, op: 0.06 },
+            { d: "M0,95 L35,95 L60,58 L85,70 L120,32 L155,50 L188,18 L222,40 L255,62 L288,45 L320,64 L380,64", sw: 1.0, op: 0.18 },
+            { d: "M0,105 L35,105 L60,76 L85,84 L120,56 L155,66 L188,42 L222,58 L255,74 L288,62 L320,78 L380,78", sw: 0.6, op: 0.10 },
+            { d: "M0,108 L380,108", sw: 0.6, op: 0.12 },
+            { d: "M120,32 L120,95 M188,18 L188,95 M255,62 L255,95", sw: 0.5, op: 0.09 },
+            { d: "M120,32 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0 M188,18 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0 M255,62 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0", sw: 0.7, op: 0.16 },
+            { d: "M8,40 L14,40 M8,44 L11,44 M8,52 L14,52 M8,56 L11,56 M8,64 L14,64 M8,68 L11,68", sw: 0.5, op: 0.09 },
           ],
         },
-        // Approach — route with waypoints (top-left)
+        // Approach — route with waypoints (top-left, expanded)
         {
           sectionId: "approach",
-          pos: { top: "3rem", left: "0" },
-          size: [200, 160],
+          pos: { top: "4rem", left: "0" },
+          size: [260, 200],
           paths: [
-            { d: "M20,140 C40,120 60,90 80,80 C100,70 110,60 140,40 C160,28 175,20 190,18", sw: 0.8, op: 0.08 },
-            { d: "M20,140 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0", sw: 0.6, op: 0.10 },
-            { d: "M80,80 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0", sw: 0.6, op: 0.10 },
-            { d: "M140,40 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0", sw: 0.6, op: 0.10 },
-            { d: "M190,18 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0", sw: 0.8, op: 0.14 },
-            { d: "M60,90 L70,90 M60,93 L65,93", sw: 0.4, op: 0.06 },
-            { d: "M115,62 L125,62 M115,65 L120,65", sw: 0.4, op: 0.06 },
+            { d: "M24,176 C48,148 72,108 100,94 C126,82 138,70 172,46 C196,30 218,20 248,16", sw: 1.0, op: 0.18 },
+            { d: "M24,176 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0", sw: 0.8, op: 0.22 },
+            { d: "M100,94 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0", sw: 0.7, op: 0.18 },
+            { d: "M172,46 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0", sw: 0.7, op: 0.18 },
+            { d: "M248,16 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0", sw: 1.0, op: 0.26 },
+            { d: "M60,108 L74,108 M60,112 L67,112 M60,118 L74,118", sw: 0.5, op: 0.10 },
+            { d: "M138,62 L152,62 M138,66 L145,66 M138,72 L152,72", sw: 0.5, op: 0.10 },
+            { d: "M24,176 L100,94 M100,94 L172,46 M172,46 L248,16", sw: 0.3, op: 0.06, dashed: true },
           ],
         },
-        // FAQ — survey grid (top-right)
+        // FAQ — survey grid (top-right, larger)
         {
           sectionId: "faq",
-          pos: { top: "2rem", right: "0" },
-          size: [180, 180],
+          pos: { top: "3rem", right: "0" },
+          size: [220, 220],
           paths: [
-            { d: "M20,20 L160,20 L160,160 L20,160 Z", sw: 0.5, op: 0.06 },
-            { d: "M20,60 L160,60 M20,100 L160,100 M20,140 L160,140", sw: 0.4, op: 0.05 },
-            { d: "M60,20 L60,160 M100,20 L100,160 M140,20 L140,160", sw: 0.4, op: 0.05 },
-            { d: "M10,10 L20,20 M170,10 L160,20 M10,170 L20,160 M170,170 L160,160", sw: 0.5, op: 0.07 },
-            { d: "M90,90 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0", sw: 0.7, op: 0.09 },
-            { d: "M90,90 L110,70 M90,90 L115,90 M90,90 L90,115 M90,90 L70,108", sw: 0.4, op: 0.06 },
+            { d: "M20,20 L200,20 L200,200 L20,200 Z", sw: 0.6, op: 0.12 },
+            { d: "M20,80 L200,80 M20,140 L200,140", sw: 0.5, op: 0.09 },
+            { d: "M80,20 L80,200 M140,20 L140,200", sw: 0.5, op: 0.09 },
+            { d: "M8,8 L20,20 M212,8 L200,20 M8,212 L20,200 M212,212 L200,200", sw: 0.6, op: 0.11 },
+            { d: "M110,110 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0", sw: 0.8, op: 0.18 },
+            { d: "M110,110 L136,84 M110,110 L142,110 M110,110 L110,142 M110,110 L84,134", sw: 0.5, op: 0.10 },
+            { d: "M50,50 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0 M170,50 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0 M50,170 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0 M170,170 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0", sw: 0.6, op: 0.12 },
           ],
         },
       ];
@@ -201,19 +206,20 @@ export default function PageAnimations() {
         svg.setAttribute("xmlns", NS);
 
         const strokeEls: (SVGPathElement & { _l: number })[] = [];
-        paths.forEach(({ d, sw, op }) => {
+        paths.forEach(({ d, sw, op, dashed }) => {
           const p = document.createElementNS(NS, "path") as SVGPathElement & { _l: number };
           p.setAttribute("d", d);
           p.setAttribute("class", "map-stroke");
           p.style.strokeWidth = String(sw);
           p.style.opacity = String(op);
+          if (dashed) p.style.strokeDasharray = "4 6";
           svg.appendChild(p);
           const l = p.getTotalLength() || 100;
-          if (!reduced) {
+          if (!reduced && !dashed) {
             p.style.strokeDasharray = String(l);
             p.style.strokeDashoffset = String(l);
           }
-          p._l = l;
+          p._l = dashed ? 0 : l;
           strokeEls.push(p);
         });
 
@@ -233,12 +239,34 @@ export default function PageAnimations() {
             wrapper.classList.add("visible");
             let delay = 0;
             strokeEls.forEach((e) => {
+              if (e._l === 0) return; // dashed paths skip draw animation
               const dur = Math.min(2.2, Math.max(0.4, e._l / 280));
               e.style.transition = `stroke-dashoffset ${dur.toFixed(2)}s cubic-bezier(.45,0,.25,1) ${delay.toFixed(2)}s`;
               delay += dur * 0.35;
               requestAnimationFrame(() => { requestAnimationFrame(() => { e.style.strokeDashoffset = "0"; }); });
             });
           },
+        });
+      });
+
+      // ── Per-section gradient glows ──
+      const sectionGlows: { id: string; style: Partial<CSSStyleDeclaration> }[] = [
+        { id: "services",  style: { width: "520px", height: "520px", top: "-120px", right: "-80px",  background: "radial-gradient(circle, rgba(108,50,158,0.18) 0%, transparent 70%)" } },
+        { id: "terrains",  style: { width: "480px", height: "480px", bottom: "-80px", left: "-60px", background: "radial-gradient(circle, rgba(42,78,162,0.16) 0%, transparent 70%)" } },
+        { id: "approach",  style: { width: "500px", height: "500px", top: "-100px", left: "-60px",   background: "radial-gradient(circle, rgba(172,70,70,0.14) 0%, transparent 70%)" } },
+        { id: "faq",       style: { width: "460px", height: "460px", top: "-80px",  right: "-60px",  background: "radial-gradient(circle, rgba(48,96,138,0.16) 0%, transparent 70%)" } },
+      ];
+      sectionGlows.forEach(({ id, style }) => {
+        const sec = document.getElementById(id);
+        if (!sec) return;
+        const glow = document.createElement("div");
+        glow.className = "section-glow";
+        Object.assign(glow.style, style);
+        sec.appendChild(glow);
+        ScrollTrigger.create({
+          trigger: sec,
+          start: "top 80%",
+          onEnter: () => glow.classList.add("visible"),
         });
       });
     }

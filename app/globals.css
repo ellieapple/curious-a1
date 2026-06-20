@@ -557,7 +557,8 @@ em.it { font-style: italic; }
   position: absolute;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.2s ease;
+  transition: opacity 1.8s cubic-bezier(.16,1,.3,1);
+  z-index: 0;
 }
 .section-map.visible { opacity: 1; }
 .section-map svg { display: block; }
@@ -567,6 +568,18 @@ em.it { font-style: italic; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* Per-section gradient accent glows */
+.section-glow {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0;
+  transition: opacity 1.6s ease;
+}
+.section-glow.visible { opacity: 1; }
 
 /* ============ V2 — Geometric accents ============ */
 
@@ -645,8 +658,12 @@ em.it { font-style: italic; }
   .faq-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .hero-geo { display: none; }
+  .band { padding-block: clamp(3.5rem, 8vw, 6rem); }
 }
 @media (max-width: 680px) {
+  :root {
+    --gutter: 20px;
+  }
   .nav-links { display: none; }
   .nav-links.open {
     display: flex;
@@ -673,11 +690,25 @@ em.it { font-style: italic; }
   .nav-toggle.open span:nth-child(1){ transform: translateY(6.5px) rotate(45deg); }
   .nav-toggle.open span:nth-child(2){ opacity: 0; }
   .nav-toggle.open span:nth-child(3){ transform: translateY(-6.5px) rotate(-45deg); }
-  .services-grid { grid-template-columns: 1fr; }
+  .services-grid { grid-template-columns: 1fr; border-radius: 12px; }
+  .service { min-height: 200px; padding: 1.6rem; }
   .steps { grid-template-columns: 1fr; }
+  .step { min-height: auto; padding: 1.4rem 1.2rem; }
   .footer-grid { grid-template-columns: 1fr; }
   .terrain { grid-template-columns: 1fr auto; }
   .terrain .meta { grid-column: 1 / -1; }
+  .hero { padding-top: 96px; padding-bottom: 48px; min-height: 100svh; }
+  .hero h1 { max-width: 100%; }
+  .hero .lede { max-width: 100%; }
+  .hero-actions { flex-direction: column; gap: 0.8rem; }
+  .hero-actions .btn { width: 100%; justify-content: center; }
+  .band-head { max-width: 100%; }
+  .band-head .lede { max-width: 100%; }
+  .cta-band h2 { font-size: var(--step-3); }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .cta-actions .btn { width: 100%; max-width: 320px; justify-content: center; }
+  .faq-item summary { font-size: var(--step-0); }
+  .section-map { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
