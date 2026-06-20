@@ -282,10 +282,21 @@
       const c = paletteColor(colorT);
       uMouseColor.value.set(c[0], c[1], c[2]);
 
-      const ops = [splatVel, advectVel, divergence];
-      for (let i = 0; i < PRESSURE_ITERS / 2; i++) ops.push(jacobiAB, jacobiBA);
-      ops.push(subtractGrad, copyVelBA, splatDye, advectDye);
-      renderer.compute(ops);
+      // Run each step individually — macOS Safari WebGPU (Metal) doesn't
+      // guarantee read-after-write ordering within a batched compute array,
+      // which causes the cursor-warp artifact on desktop. Sequential calls
+      // enforce the correct dependency chain on all platforms.
+      renderer.compute(splatVel);
+      renderer.compute(advectVel);
+      renderer.compute(divergence);
+      for (let i = 0; i < PRESSURE_ITERS / 2; i++) {
+        renderer.compute(jacobiAB);
+        renderer.compute(jacobiBA);
+      }
+      renderer.compute(subtractGrad);
+      renderer.compute(copyVelBA);
+      renderer.compute(splatDye);
+      renderer.compute(advectDye);
       renderer.render(scene, cam);
 
       realVel[0] *= 0.84;
