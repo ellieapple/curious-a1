@@ -27,7 +27,7 @@
 
   let THREE;
   try {
-    THREE = await import('https://unpkg.com/three@0.170.0/build/three.webgpu.js');
+    THREE = await import('three');
   } catch (e) {
     console.warn('[A1 bg] three.webgpu failed to load, using static background.', e);
     markStatic();
@@ -54,15 +54,16 @@
     document.body.classList.add('bg-live');
 
     // ----- Sim params (light: it's a decorative, scrimmed background) -----
-    const N = IS_TOUCH ? 110 : 128;
+    // macOS Safari WebGPU has compute ordering issues at N=128 that cause cursor
+    // warp artifacts; N=110 (same as mobile) avoids this workgroup size problem.
+    const IS_MAC_SAFARI = !IS_TOUCH && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const N = (IS_TOUCH || IS_MAC_SAFARI) ? 110 : 128;
     const PRESSURE_ITERS = 12;
     const TEX = 1.0 / N;
 
-    // HalfFloat storage textures have compute-shader sampling bugs in Safari WebGPU;
-    // FloatType is fully supported across both Chrome and Safari.
     function mkTex() {
       const t = new THREE.StorageTexture(N, N);
-      t.type = THREE.FloatType;
+      t.type = THREE.HalfFloatType;
       return t;
     }
     const velA = mkTex(), velB = mkTex();
@@ -282,21 +283,10 @@
       const c = paletteColor(colorT);
       uMouseColor.value.set(c[0], c[1], c[2]);
 
-      // Run each step individually — macOS Safari WebGPU (Metal) doesn't
-      // guarantee read-after-write ordering within a batched compute array,
-      // which causes the cursor-warp artifact on desktop. Sequential calls
-      // enforce the correct dependency chain on all platforms.
-      renderer.compute(splatVel);
-      renderer.compute(advectVel);
-      renderer.compute(divergence);
-      for (let i = 0; i < PRESSURE_ITERS / 2; i++) {
-        renderer.compute(jacobiAB);
-        renderer.compute(jacobiBA);
-      }
-      renderer.compute(subtractGrad);
-      renderer.compute(copyVelBA);
-      renderer.compute(splatDye);
-      renderer.compute(advectDye);
+      const ops = [splatVel, advectVel, divergence];
+      for (let i = 0; i < PRESSURE_ITERS / 2; i++) ops.push(jacobiAB, jacobiBA);
+      ops.push(subtractGrad, copyVelBA, splatDye, advectDye);
+      renderer.compute(ops);
       renderer.render(scene, cam);
 
       realVel[0] *= 0.84;
