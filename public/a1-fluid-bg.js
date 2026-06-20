@@ -1,7 +1,8 @@
 // ============================================================
 // A1 — Ambient fluid background (WebGPU / TSL)
-// Background-mode adaptation: pointer pass-through, self-animating,
-// calmed for legibility, paused when tab hidden / reduced-motion.
+// macOS Safari: canvas-2D glow trail (avoids WebGPU Metal quirks)
+// Others: WebGPU Navier-Stokes fluid
+// Paused when tab hidden / reduced-motion.
 // ============================================================
 (async function () {
   const cv = document.getElementById('bg-canvas');
@@ -9,13 +10,13 @@
 
   const PREFERS_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
+  const IS_MAC_SAFARI = !IS_TOUCH && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   function markStatic() {
     document.body.classList.add('bg-static');
     cv.style.display = 'none';
   }
 
-  // Reduced motion or no WebGPU → quiet CSS gradient (defined in stylesheet).
   if (PREFERS_REDUCED || !navigator.gpu) { markStatic(); return; }
 
   function sizeCanvas() {
@@ -25,6 +26,31 @@
   }
   sizeCanvas();
 
+  // Shared palette
+  const PALETTE = [
+    [0.13, 0.20, 0.72],
+    [0.10, 0.46, 0.88],
+    [0.10, 0.64, 0.68],
+    [0.30, 0.74, 0.46],
+    [0.58, 0.28, 0.82],
+    [0.86, 0.26, 0.54],
+    [0.96, 0.48, 0.28],
+  ];
+  function paletteColor(t) {
+    const n = PALETTE.length;
+    const f = (t % n + n) % n;
+    const i = Math.floor(f), j = (i + 1) % n, k = f - i;
+    const a = PALETTE[i], b = PALETTE[j];
+    return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k];
+  }
+
+  // ── macOS Safari: canvas-2D glow trail ──────────────────────────────────────
+  if (IS_MAC_SAFARI) {
+    runCanvasTrail();
+    return;
+  }
+
+  // ── All other browsers: WebGPU fluid ────────────────────────────────────────
   let THREE;
   try {
     THREE = await import('three');
@@ -41,6 +67,89 @@
     markStatic();
   }
 
+  // ── Canvas 2D glow trail (Safari) ───────────────────────────────────────────
+  function runCanvasTrail() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+    const ctx = cv.getContext('2d');
+    document.body.classList.add('bg-live');
+
+    const DURATION = 2.2;   // seconds a trail point lives
+    const BLOB_R   = 150;   // CSS-px radius of each glow blob
+
+    const trail = [];
+    let colorT = 0;
+    let lastMoveT = -1e9;
+    let pointerSeen = false;
+    let lastX = 0, lastY = 0;
+
+    window.addEventListener('pointermove', (e) => {
+      const t = performance.now() / 1000;
+      const speed = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+      lastX = e.clientX; lastY = e.clientY;
+      lastMoveT = t; pointerSeen = true;
+      colorT += 0.05 + speed * 0.002;
+      const [r, g, b] = paletteColor(colorT);
+      trail.push({ x: e.clientX, y: e.clientY, r, g, b, born: t });
+      if (trail.length > 500) trail.shift();
+    }, { passive: true });
+
+    window.addEventListener('pointerout', (e) => {
+      if (!e.relatedTarget) pointerSeen = false;
+    }, { passive: true });
+
+    window.addEventListener('resize', () => { sizeCanvas(); });
+
+    let running = true, rafId = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { running = false; cancelAnimationFrame(rafId); }
+      else if (!running) { running = true; rafId = requestAnimationFrame(frame); }
+    });
+
+    function frame() {
+      if (!running) return;
+      const now = performance.now() / 1000;
+      const W = cv.width, H = cv.height;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const cutoff = now - DURATION;
+      while (trail.length > 0 && trail[0].born < cutoff) trail.shift();
+
+      // 'lighter' = additive blend — colors accumulate like real light/dye
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (const p of trail) {
+        const age = now - p.born;
+        const life = Math.max(0, 1 - age / DURATION);
+        const alpha = Math.pow(life, 1.8) * 0.55;
+        if (alpha < 0.008) continue;
+
+        const px = p.x * dpr;
+        const py = p.y * dpr;
+        const rad = BLOB_R * dpr * (0.5 + 0.5 * life);
+
+        const rr = Math.round(p.r * 255);
+        const gg = Math.round(p.g * 255);
+        const bb = Math.round(p.b * 255);
+
+        const grd = ctx.createRadialGradient(px, py, 0, px, py, rad);
+        grd.addColorStop(0,    `rgba(${rr},${gg},${bb},${alpha.toFixed(3)})`);
+        grd.addColorStop(0.45, `rgba(${rr},${gg},${bb},${(alpha * 0.18).toFixed(3)})`);
+        grd.addColorStop(1,    `rgba(0,0,0,0)`);
+
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(px, py, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    rafId = requestAnimationFrame(frame);
+  }
+
+  // ── WebGPU Navier-Stokes (Chrome / Firefox / iOS Safari) ────────────────────
   async function runBackground(THREE) {
     const {
       Fn, instanceIndex, textureStore, texture, uniform,
@@ -53,9 +162,7 @@
     await renderer.init();
     document.body.classList.add('bg-live');
 
-    // ----- Sim params (light: it's a decorative, scrimmed background) -----
-    const IS_MAC_SAFARI = !IS_TOUCH && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const N = (IS_TOUCH || IS_MAC_SAFARI) ? 110 : 128;
+    const N = IS_TOUCH ? 110 : 128;
     const PRESSURE_ITERS = 12;
     const TEX = 1.0 / N;
 
@@ -69,13 +176,13 @@
     const prsA = mkTex(), prsB = mkTex();
     const divT = mkTex();
 
-    const uMouseUV = uniform(new THREE.Vector2(0.5, 0.5));
-    const uMouseVel = uniform(new THREE.Vector2(0, 0));
-    const uMouseDown = uniform(0.0);
+    const uMouseUV    = uniform(new THREE.Vector2(0.5, 0.5));
+    const uMouseVel   = uniform(new THREE.Vector2(0, 0));
+    const uMouseDown  = uniform(0.0);
     const uMouseColor = uniform(new THREE.Vector3(1, 1, 1));
-    const uDt = uniform(1 / 60);
-    const uAspect = uniform(new THREE.Vector2(1, 1));
-    const uSplatSize = uniform(0.05);
+    const uDt         = uniform(1 / 60);
+    const uAspect     = uniform(new THREE.Vector2(1, 1));
+    const uSplatSize  = uniform(0.05);
 
     const getCoord = () => {
       const ix = instanceIndex.modInt(N);
@@ -139,7 +246,7 @@
       const pU = texture(prsA, uvN.add(oy)).x;
       const v = texture(velA, uvN).xy;
       const grad = vec2(pR.sub(pL), pU.sub(pD)).mul(0.5);
-      const v1 = v.sub(grad).mul(0.994);   // hold momentum so the plume flows
+      const v1 = v.sub(grad).mul(0.994);
       textureStore(velB, coord, vec4(v1, 0, 1));
     })().compute(N * N);
 
@@ -157,8 +264,6 @@
       const invR2 = float(1).div(dyeRadius.mul(dyeRadius));
       const falloff = r2.mul(invR2).negate().exp();
       const oldC = texture(dyeA, uvN).xyz;
-      // Lerp the existing dye TOWARD the target hue instead of adding — keeps
-      // colors inside the palette gamut so overlaps never sum up to white.
       const factor = falloff.mul(uMouseDown).mul(0.55);
       const newC = oldC.add(uMouseColor.sub(oldC).mul(factor));
       textureStore(dyeB, coord, vec4(newC, 1));
@@ -169,10 +274,9 @@
       const v = texture(velA, uvN).xy;
       const back = uvN.sub(v.mul(uDt));
       const sampled = texture(dyeB, back).xyz;
-      textureStore(dyeA, coord, vec4(sampled.mul(0.9925), 1));   // slow fade = lingering trail
+      textureStore(dyeA, coord, vec4(sampled.mul(0.9925), 1));
     })().compute(N * N);
 
-    // ----- Display -----
     const scene = new THREE.Scene();
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const mat = new THREE.MeshBasicNodeMaterial();
@@ -188,12 +292,12 @@
     }
     setAspect();
 
-    // ----- Input: pointer is pass-through; we listen on window passively -----
     let realUV = [0.5, 0.5];
     let realVel = [0, 0];
     let prevUV = null, prevT = performance.now();
-    let lastMoveT = -1e9;        // when the pointer last actually moved
-    let pointerSeen = false;     // has the pointer ever been over the page
+    let lastMoveT = -1e9;
+    let pointerSeen = false;
+
     function onMove(e) {
       const x = e.clientX, y = e.clientY;
       const u = x / window.innerWidth;
@@ -219,31 +323,7 @@
       setAspect();
     });
 
-    // ----- Deep-night palette: indigo → electric blue → violet (Noomo-style) -----
-    // Creative cool→warm spectrum: a stroke sweeps through these as it moves.
-    const PALETTE = [
-      [0.13, 0.20, 0.72],  // indigo
-      [0.10, 0.46, 0.88],  // azure
-      [0.10, 0.64, 0.68],  // teal
-      [0.30, 0.74, 0.46],  // jade
-      [0.58, 0.28, 0.82],  // violet
-      [0.86, 0.26, 0.54],  // magenta-rose
-      [0.96, 0.48, 0.28],  // warm coral accent
-    ];
-    function paletteColor(t) {
-      const n = PALETTE.length;
-      const f = (t % n + n) % n;
-      const i = Math.floor(f), j = (i + 1) % n, k = f - i;
-      const a = PALETTE[i], b = PALETTE[j];
-      return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
-    }
-
-    // ----- Cursor-driven only -----
-    // Dye is emitted while the pointer is moving and dissipates whenever it
-    // stops. No ambient / bottom plume — the field is still until you move.
     let colorT = 0;
-
-    // ----- Pause when tab hidden / page fully scrolled away (perf) -----
     let running = true;
     let rafId = 0;
     document.addEventListener('visibilitychange', () => {
@@ -259,9 +339,7 @@
       lastFrame = now;
       uDt.value = dt;
 
-      // --- Cursor is the only emitter: follow it while moving, fade when idle ---
       const sinceMove = (now - lastMoveT) / 1000;
-      // Emission fades out within ~0.18s of the cursor stopping.
       const moveBoost = Math.max(0, 1 - sinceMove / 0.18);
       const intensity = pointerSeen ? 0.55 * moveBoost : 0;
 
