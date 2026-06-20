@@ -47,13 +47,13 @@ export default function PageAnimations() {
             }
           });
         },
-        { threshold: 0, rootMargin: "0px 0px -5% 0px" }
+        { threshold: 0.08, rootMargin: "0px 0px -10% 0px" }
       );
 
       // Small delay to let layout settle before measuring positions
       setTimeout(() => {
         document.querySelectorAll<HTMLElement>(".reveal, .stagger").forEach((el) => {
-          if (el.getBoundingClientRect().top < window.innerHeight * 0.95) {
+          if (el.getBoundingClientRect().top < window.innerHeight * 0.72) {
             el.classList.add("in");
           } else {
             revealIo.observe(el);

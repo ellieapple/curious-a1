@@ -551,6 +551,29 @@ em.it { font-style: italic; }
 }
 .js-anim .stagger.clip-up.in > * { opacity: 1; transform: none; clip-path: inset(0 0 0% 0); }
 
+/* Mobile — strip blur (GPU-expensive), lighter transforms, faster stagger */
+@media (max-width: 768px) {
+  .js-anim .reveal {
+    transform: translateY(22px);
+    filter: none;
+    transition: opacity .52s cubic-bezier(.16,1,.3,1), transform .52s cubic-bezier(.16,1,.3,1);
+  }
+  .js-anim .reveal.in { filter: none; }
+  .js-anim .stagger > * {
+    transform: translateY(28px) scale(0.97);
+    filter: none;
+    transition: opacity .46s cubic-bezier(.16,1,.3,1), transform .46s cubic-bezier(.16,1,.3,1);
+    transition-delay: calc(var(--i, 0) * 55ms);
+  }
+  .js-anim .stagger.in > * { filter: none; }
+  .js-anim .stagger.from-left > * { transform: translateX(-28px); filter: none; }
+  .js-anim .stagger.from-left.in > * { filter: none; }
+  .js-anim .stagger.clip-up > * {
+    transition: opacity .38s cubic-bezier(.16,1,.3,1), transform .38s cubic-bezier(.16,1,.3,1), clip-path .42s cubic-bezier(.16,1,.3,1);
+    transition-delay: calc(var(--i, 0) * 50ms);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .js-anim .reveal,
   .js-anim .stagger > * { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; transition: none !important; }
