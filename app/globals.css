@@ -552,6 +552,22 @@ em.it { font-style: italic; }
 
 .cv-auto { contain: layout style; }
 
+/* ── Section background map sketches ── */
+.section-map {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.section-map.visible { opacity: 1; }
+.section-map svg { display: block; }
+.map-stroke {
+  fill: none;
+  stroke: var(--paper);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* ============ V2 — Geometric accents ============ */
 
 /* Hero topographic SVG */

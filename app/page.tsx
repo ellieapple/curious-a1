@@ -7,6 +7,9 @@ export default function Home() {
     <>
       <a className="skip" href="#main">Skip to content</a>
 
+      <canvas id="bg-canvas" aria-hidden="true"></canvas>
+      <div className="scrim" aria-hidden="true"></div>
+
       <Header />
 
       <main id="main" className="page">

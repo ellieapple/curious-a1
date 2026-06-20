@@ -13,10 +13,5 @@ export default function FluidBackground() {
     };
   }, []);
 
-  return (
-    <>
-      <canvas id="bg-canvas" aria-hidden="true" />
-      <div className="scrim" aria-hidden="true" />
-    </>
-  );
+  return null;
 }
