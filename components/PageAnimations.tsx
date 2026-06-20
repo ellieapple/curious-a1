@@ -7,18 +7,22 @@ export default function PageAnimations() {
     const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const NS = "http://www.w3.org/2000/svg";
 
-    // ── Entrance animations ──
+    // ── Year ──
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+    // ── Entrance reveal animations ──
     const docEl = document.documentElement;
     const reveals = document.querySelectorAll<HTMLElement>(".reveal");
+    let revealIo: IntersectionObserver | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const failsafeTimer = { id: null as any };
     if ("IntersectionObserver" in window && !REDUCED) {
       docEl.classList.add("js-anim");
-      const io = new IntersectionObserver(
+      revealIo = new IntersectionObserver(
         (entries) => {
           entries.forEach((en) => {
-            if (en.isIntersecting) {
-              en.target.classList.add("in");
-              io.unobserve(en.target);
-            }
+            if (en.isIntersecting) { en.target.classList.add("in"); revealIo?.unobserve(en.target); }
           });
         },
         { threshold: 0, rootMargin: "0px 0px -5% 0px" }
@@ -26,19 +30,11 @@ export default function PageAnimations() {
       requestAnimationFrame(() => {
         reveals.forEach((el) => {
           if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add("in");
-          else io.observe(el);
+          else revealIo?.observe(el);
         });
       });
-      const failsafe = setTimeout(() => { docEl.classList.remove("js-anim"); }, 3000);
-      return () => {
-        clearTimeout(failsafe);
-        io.disconnect();
-      };
+      failsafeTimer.id = setTimeout(() => { docEl.classList.remove("js-anim"); }, 3000);
     }
-
-    // ── Year ──
-    const yearEl = document.getElementById("year");
-    if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
     // ── Topographic contours ──
     let _s = 7919;
@@ -64,8 +60,8 @@ export default function PageAnimations() {
       return d + "Z";
     }
 
-    const svg = document.getElementById("topo-svg") as SVGSVGElement | null;
-    if (svg) {
+    const topoSvg = document.getElementById("topo-svg") as SVGSVGElement | null;
+    if (topoSvg) {
       const CX = 335, CY = 215;
       const LVLS = [
         { rx: 255, ry: 192, pts: 14, n: 0.22, op: 0.10 },
@@ -85,7 +81,7 @@ export default function PageAnimations() {
         if (sw) e.style.strokeWidth = String(sw);
         e.style.opacity = String(op);
         if (stroke) e.style.stroke = stroke;
-        svg!.appendChild(e);
+        topoSvg!.appendChild(e);
         const l = e.getTotalLength() || 400;
         if (!REDUCED) { e.style.strokeDasharray = String(l); e.style.strokeDashoffset = String(l); }
         e._l = l;
@@ -115,7 +111,7 @@ export default function PageAnimations() {
       }
     }
 
-    // ── Scroll-triggered draw rules ──
+    // ── Scroll-triggered draw rules (.js-draw) ──
     const drawTargets = document.querySelectorAll<HTMLElement>(".js-draw");
     let drawObs: IntersectionObserver | null = null;
     if ("IntersectionObserver" in window && drawTargets.length) {
@@ -149,7 +145,6 @@ export default function PageAnimations() {
         e.style.strokeDashoffset = String(l);
         e._l = l;
         cityEls.push(e);
-        return e;
       }
       function ar(x: number, y: number, w: number, h: number, r: number, sw: number, op: number) {
         const e = document.createElementNS(NS, "rect") as SVGRectElement & { _l: number };
@@ -164,7 +159,6 @@ export default function PageAnimations() {
         e.style.strokeDashoffset = String(l);
         e._l = l;
         cityEls.push(e);
-        return e;
       }
       function ac(cx: number, cy: number, r: number, sw: number, op: number) {
         const e = document.createElementNS(NS, "circle") as SVGCircleElement & { _l: number };
@@ -177,7 +171,6 @@ export default function PageAnimations() {
         e.style.strokeDashoffset = String(l);
         e._l = l;
         cityEls.push(e);
-        return e;
       }
 
       ap("M800,200 L1590,200", 1.2, 0.13);
@@ -291,6 +284,8 @@ export default function PageAnimations() {
     }
 
     return () => {
+      clearTimeout(failsafeTimer.id);
+      revealIo?.disconnect();
       drawObs?.disconnect();
     };
   }, []);
