@@ -44,13 +44,7 @@
     return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k];
   }
 
-  // ── macOS Safari: canvas-2D glow trail ──────────────────────────────────────
-  if (IS_MAC_SAFARI) {
-    runCanvasTrail();
-    return;
-  }
-
-  // ── All other browsers: WebGPU fluid ────────────────────────────────────────
+  // ── WebGPU fluid for all browsers (Safari gets Y-flip fixes below) ──────────
   let THREE;
   try {
     THREE = await import('three');
@@ -281,7 +275,9 @@
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const mat = new THREE.MeshBasicNodeMaterial();
     mat.transparent = true;
-    mat.colorNode = texture(dyeA, uv()).xyz.toVec4();
+    // Safari Metal has opposite texture Y origin vs Chrome Vulkan — flip display UV
+    const displayUV = IS_MAC_SAFARI ? vec2(uv().x, float(1).sub(uv().y)) : uv();
+    mat.colorNode = texture(dyeA, displayUV).xyz.toVec4();
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
     scene.add(quad);
 
@@ -301,7 +297,8 @@
     function onMove(e) {
       const x = e.clientX, y = e.clientY;
       const u = x / window.innerWidth;
-      const v = 1 - y / window.innerHeight;
+      // Safari Metal Y origin is top-left (matches screen); Vulkan/Chrome flips so we invert
+      const v = IS_MAC_SAFARI ? y / window.innerHeight : 1 - y / window.innerHeight;
       const t = performance.now();
       if (prevUV) {
         const dt = Math.max(0.008, (t - prevT) / 1000);
