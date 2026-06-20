@@ -244,7 +244,7 @@ em.it { font-style: italic; }
   list-style: none;
   margin: 0; padding: 0;
 }
-.nav-links a {
+.nav-links a:not(.btn) {
   color: var(--paper-dim);
   text-decoration: none;
   font-size: var(--step--1);
@@ -252,7 +252,7 @@ em.it { font-style: italic; }
   transition: color .2s;
   position: relative;
 }
-.nav-links a:hover { color: var(--paper); }
+.nav-links a:not(.btn):hover { color: var(--paper); }
 .nav-cta { display: inline-flex; }
 .nav-toggle { display: none; }
 
