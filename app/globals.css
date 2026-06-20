@@ -41,7 +41,6 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -49,6 +48,7 @@ html {
 
 body {
   margin: 0;
+  position: relative;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-hanken), system-ui, -apple-system, sans-serif;
