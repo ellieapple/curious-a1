@@ -74,7 +74,7 @@
     const uMouseColor = uniform(new THREE.Vector3(1, 1, 1));
     const uDt = uniform(1 / 60);
     const uAspect = uniform(new THREE.Vector2(1, 1));
-    const uSplatSize = uniform(0.05);
+    const uSplatSize = uniform(0.032);
 
     const getCoord = () => {
       const ix = instanceIndex.modInt(N);
@@ -138,7 +138,7 @@
       const pU = texture(prsA, uvN.add(oy)).x;
       const v = texture(velA, uvN).xy;
       const grad = vec2(pR.sub(pL), pU.sub(pD)).mul(0.5);
-      const v1 = v.sub(grad).mul(0.994);   // hold momentum so the plume flows
+      const v1 = v.sub(grad).mul(0.986);   // hold momentum so the plume flows
       textureStore(velB, coord, vec4(v1, 0, 1));
     })().compute(N * N);
 
@@ -158,7 +158,7 @@
       const oldC = texture(dyeA, uvN).xyz;
       // Lerp the existing dye TOWARD the target hue instead of adding — keeps
       // colors inside the palette gamut so overlaps never sum up to white.
-      const factor = falloff.mul(uMouseDown).mul(0.55);
+      const factor = falloff.mul(uMouseDown).mul(0.38);
       const newC = oldC.add(uMouseColor.sub(oldC).mul(factor));
       textureStore(dyeB, coord, vec4(newC, 1));
     })().compute(N * N);
@@ -168,7 +168,7 @@
       const v = texture(velA, uvN).xy;
       const back = uvN.sub(v.mul(uDt));
       const sampled = texture(dyeB, back).xyz;
-      textureStore(dyeA, coord, vec4(sampled.mul(0.9925), 1));   // slow fade = lingering trail
+      textureStore(dyeA, coord, vec4(sampled.mul(0.988), 1));   // faster fade = less lingering
     })().compute(N * N);
 
     // ----- Display -----
@@ -242,6 +242,9 @@
     // stops. No ambient / bottom plume — the field is still until you move.
     let colorT = 0;
 
+    // Mutable config — toolbox writes here, frame() reads every tick
+    const simCfg = { splatSize: 0.032, intensity: 0.38, maxMag: 0.85 };
+
     // ----- Pause when tab hidden / page fully scrolled away (perf) -----
     let running = true;
     let rafId = 0;
@@ -262,17 +265,18 @@
       const sinceMove = (now - lastMoveT) / 1000;
       // Emission fades out within ~0.18s of the cursor stopping.
       const moveBoost = Math.max(0, 1 - sinceMove / 0.18);
-      const intensity = pointerSeen ? 0.55 * moveBoost : 0;
+      uSplatSize.value = simCfg.splatSize;
+      const intensity = pointerSeen ? simCfg.intensity * moveBoost : 0;
 
       let vx = realVel[0], vy = realVel[1];
-      const mag = Math.hypot(vx, vy), maxMag = 1.4;
-      if (mag > maxMag) { vx = vx / mag * maxMag; vy = vy / mag * maxMag; }
+      const mag = Math.hypot(vx, vy);
+      if (mag > simCfg.maxMag) { vx = vx / mag * simCfg.maxMag; vy = vy / mag * simCfg.maxMag; }
 
       uMouseUV.value.set(realUV[0], realUV[1]);
       uMouseVel.value.set(vx, vy);
       uMouseDown.value = intensity;
 
-      colorT += dt * 0.10 + mag * dt * 0.85;
+      colorT += dt * 0.06 + mag * dt * 0.45;
       const c = paletteColor(colorT);
       uMouseColor.value.set(c[0], c[1], c[2]);
 
@@ -288,5 +292,132 @@
       rafId = requestAnimationFrame(frame);
     }
     rafId = requestAnimationFrame(frame);
+
+    // ----- Fluid Toolbox UI (desktop only) -----
+    (function injectToolbox() {
+      const s = document.createElement('style');
+      s.textContent = `
+        #ftb {
+          position: fixed;
+          bottom: 2rem;
+          right: 1.5rem;
+          z-index: 9000;
+          font-family: 'JetBrains Mono', 'Courier New', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.06em;
+        }
+        @media (max-width: 680px) { #ftb { display: none; } }
+        #ftb-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 14px;
+          background: rgba(7,7,10,0.72);
+          border: 1px solid rgba(232,200,160,0.22);
+          border-radius: 20px;
+          color: #e8c8a0;
+          cursor: pointer;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          user-select: none;
+          margin-left: auto;
+          width: fit-content;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        #ftb-btn:hover { border-color: rgba(232,200,160,0.5); background: rgba(7,7,10,0.88); }
+        #ftb-panel {
+          display: none;
+          margin-bottom: 8px;
+          background: rgba(7,7,10,0.82);
+          border: 1px solid rgba(232,200,160,0.18);
+          border-radius: 12px;
+          padding: 14px 16px;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          min-width: 190px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        #ftb.ftb-open #ftb-panel { display: block; }
+        .ftb-row {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 12px;
+        }
+        .ftb-row:last-child { margin-bottom: 0; }
+        .ftb-label {
+          display: flex;
+          justify-content: space-between;
+          color: rgba(244,241,234,0.45);
+          text-transform: uppercase;
+        }
+        .ftb-val { color: #e8c8a0; }
+        .ftb-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 2px;
+          background: rgba(232,200,160,0.18);
+          border-radius: 2px;
+          outline: none;
+          cursor: pointer;
+        }
+        .ftb-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          background: #e8c8a0;
+          cursor: pointer;
+          box-shadow: 0 0 6px rgba(232,200,160,0.5);
+        }
+        .ftb-slider::-moz-range-thumb {
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          background: #e8c8a0;
+          border: none;
+          cursor: pointer;
+        }
+      `;
+      document.head.appendChild(s);
+
+      const el = document.createElement('div');
+      el.id = 'ftb';
+      el.innerHTML = `
+        <div id="ftb-panel">
+          <div class="ftb-row">
+            <div class="ftb-label"><span>SIZE</span><span class="ftb-val" id="ftb-size-v">0.032</span></div>
+            <input class="ftb-slider" id="ftb-size" type="range" min="0.010" max="0.080" step="0.001" value="0.032">
+          </div>
+          <div class="ftb-row">
+            <div class="ftb-label"><span>SPEED</span><span class="ftb-val" id="ftb-speed-v">0.85</span></div>
+            <input class="ftb-slider" id="ftb-speed" type="range" min="0.20" max="2.00" step="0.05" value="0.85">
+          </div>
+          <div class="ftb-row">
+            <div class="ftb-label"><span>GLOW</span><span class="ftb-val" id="ftb-glow-v">0.38</span></div>
+            <input class="ftb-slider" id="ftb-glow" type="range" min="0.05" max="0.80" step="0.01" value="0.38">
+          </div>
+        </div>
+        <div id="ftb-btn">✦ fluid</div>
+      `;
+      document.body.appendChild(el);
+
+      el.querySelector('#ftb-btn').addEventListener('click', () => el.classList.toggle('ftb-open'));
+
+      el.querySelector('#ftb-size').addEventListener('input', e => {
+        simCfg.splatSize = +e.target.value;
+        uSplatSize.value = simCfg.splatSize;
+        el.querySelector('#ftb-size-v').textContent = simCfg.splatSize.toFixed(3);
+      });
+      el.querySelector('#ftb-speed').addEventListener('input', e => {
+        simCfg.maxMag = +e.target.value;
+        el.querySelector('#ftb-speed-v').textContent = simCfg.maxMag.toFixed(2);
+      });
+      el.querySelector('#ftb-glow').addEventListener('input', e => {
+        simCfg.intensity = +e.target.value;
+        el.querySelector('#ftb-glow-v').textContent = simCfg.intensity.toFixed(2);
+      });
+    })();
   }
 })();
