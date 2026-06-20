@@ -27,7 +27,7 @@
 
   let THREE;
   try {
-    THREE = await import('three');
+    THREE = await import('https://unpkg.com/three@0.170.0/build/three.webgpu.js');
   } catch (e) {
     console.warn('[A1 bg] three.webgpu failed to load, using static background.', e);
     markStatic();
@@ -58,9 +58,11 @@
     const PRESSURE_ITERS = 12;
     const TEX = 1.0 / N;
 
+    // HalfFloat storage textures have compute-shader sampling bugs in Safari WebGPU;
+    // FloatType is fully supported across both Chrome and Safari.
     function mkTex() {
       const t = new THREE.StorageTexture(N, N);
-      t.type = THREE.HalfFloatType;
+      t.type = THREE.FloatType;
       return t;
     }
     const velA = mkTex(), velB = mkTex();
