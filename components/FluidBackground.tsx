@@ -9,18 +9,7 @@ export default function FluidBackground() {
 
     const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // ── WebGPU path ──
-    if (!REDUCED && "gpu" in navigator) {
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = "/a1-fluid-bg.js";
-      document.body.appendChild(script);
-      return () => {
-        if (document.body.contains(script)) document.body.removeChild(script);
-      };
-    }
-
-    // ── Canvas 2D animated gradient fallback (all other browsers) ──
+    // Canvas 2D animated gradient — works on all browsers, no WebGPU needed
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 

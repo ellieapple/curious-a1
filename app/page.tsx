@@ -9,6 +9,7 @@ export default function Home() {
 
       <canvas id="bg-canvas" aria-hidden="true"></canvas>
       <div className="scrim" aria-hidden="true"></div>
+      <p className="swipe-hint" aria-hidden="true">swipe to interact</p>
 
       <Header />
 
